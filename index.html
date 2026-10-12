@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<title>Störungslogger</title>
+<style>
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --text:#0f172a; --muted:#64748b; --line:#e2e8f0;
+  --accent:#1d4ed8; --accent-text:#ffffff; --rec:#dc2626; --ok:#15803d; --warn:#b45309;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b1120; --card:#111827; --text:#e5e7eb; --muted:#94a3b8; --line:#1f2937;
+    --accent:#3b82f6; --rec:#ef4444; --ok:#22c55e; --warn:#f59e0b;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b1120; --card:#111827; --text:#e5e7eb; --muted:#94a3b8; --line:#1f2937;
+  --accent:#3b82f6; --rec:#ef4444; --ok:#22c55e; --warn:#f59e0b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer}
+.hidden{display:none!important}
+
+/* Splash */
+#splash{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .3s}
+#splash.fade{opacity:0;pointer-events:none}
+.logo-ph{width:96px;height:96px;border-radius:24px;border:2px dashed var(--muted);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px}
+#splash h1{margin:0;font-size:24px;letter-spacing:.2px}
+
+/* Layout */
+#app{display:flex;flex-direction:column;height:100%;max-width:640px;margin:0 auto}
+header{padding:12px 16px 8px;display:flex;align-items:center;gap:8px}
+.inc-switch{flex:1;min-width:0;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px}
+.inc-switch small{display:block;color:var(--muted);font-size:12px}
+.inc-switch b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon-btn{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);min-width:48px;height:48px;font-size:20px;display:flex;align-items:center;justify-content:center}
+
+main{flex:1;overflow-y:auto;padding:4px 16px 16px}
+.empty{color:var(--muted);text-align:center;padding:40px 12px}
+.entry{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px;display:flex;gap:10px}
+.entry time{font-variant-numeric:tabular-nums;font-weight:600;min-width:46px}
+.entry .body{flex:1;min-width:0;white-space:pre-wrap;word-wrap:break-word}
+.entry .meta{color:var(--muted);font-size:12px;margin-top:4px}
+.entry .more{background:none;border:none;color:var(--muted);font-size:20px;padding:0 4px;align-self:flex-start;min-width:36px;min-height:36px}
+
+/* Status + bottom bar */
+#status{margin:0 16px 8px;padding:10px 12px;border-radius:var(--radius);font-size:15px;background:var(--card);border:1px solid var(--line)}
+#status.rec{background:var(--rec);color:#fff;border-color:var(--rec)}
+#status.ok{border-color:var(--ok);color:var(--ok)}
+#status.err{border-color:var(--rec);color:var(--rec)}
+#status.info{border-color:var(--warn);color:var(--warn)}
+#status .live{display:block;font-style:italic;opacity:.9;margin-top:4px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#fff;margin-right:8px;animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.25}}
+
+.bottom{padding:8px 16px calc(12px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1fr;gap:10px;background:var(--bg)}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:var(--radius);min-height:48px;padding:10px 12px;font-weight:600}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-text)}
+.btn.danger{color:var(--rec)}
+#micBtn{grid-column:1 / -1;height:88px;border:none;border-radius:44px;background:var(--accent);color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 6px 20px rgba(29,78,216,.35)}
+#micBtn.rec{background:var(--rec);box-shadow:0 0 0 6px rgba(220,38,38,.25)}
+#micBtn svg{width:32px;height:32px}
+
+/* Sheets */
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:92vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+.sheet h2{margin:0 0 12px;font-size:19px}
+.sheet label{display:block;font-size:14px;color:var(--muted);margin:12px 0 4px}
+.sheet input,.sheet textarea{width:100%;font:inherit;color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.sheet textarea{min-height:120px;resize:vertical}
+#reportText{min-height:50vh;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px}
+.row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.row .btn{flex:1}
+.list-item{width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px;margin-bottom:8px}
+.list-item.active{border-color:var(--accent);border-width:2px}
+.list-item small{color:var(--muted);display:block}
+.hint{color:var(--muted);font-size:13px;margin:6px 0 0}
+.note{border-left:3px solid var(--warn);padding:6px 10px;font-size:14px;margin:10px 0;background:var(--card)}
+.sheetmsg{padding:10px 12px;border-radius:10px;margin-bottom:12px;font-size:15px;background:var(--card);border:1px solid var(--line)}
+.sheetmsg.ok{border-color:var(--ok);color:var(--ok)}
+.sheetmsg.err{border-color:var(--rec);color:var(--rec)}
+.sheetmsg.info{border-color:var(--warn);color:var(--warn)}
+.linkbtn{display:flex;align-items:center;justify-content:center;width:100%;margin-top:14px;text-decoration:none}
+a.btn.primary{color:var(--accent-text)}
+.orig{color:var(--muted);font-size:14px;white-space:pre-wrap;background:var(--card);border:1px dashed var(--line);border-radius:10px;padding:8px 10px}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="logo-ph">Logo</div>
+  <h1>Störungslogger</h1>
+</div>
+
+<div id="app">
+  <header>
+    <button class="inc-switch" id="incBtn" aria-label="Störung wechseln">
+      <small>Aktuelle Störung ▾</small>
+      <b id="incTitle">Noch keine Störung</b>
+    </button>
+    <button class="icon-btn" id="newIncBtn" aria-label="Neue Störung" title="Neue Störung">＋</button>
+    <button class="icon-btn" id="settingsBtn" aria-label="Einstellungen" title="Einstellungen">⚙</button>
+  </header>
+
+  <main id="entries"></main>
+
+  <div id="status" class="hidden"></div>
+
+  <div class="bottom">
+    <button class="btn" id="reportBtn">Bericht prüfen</button>
+    <button class="btn" id="mailBtn">Per E-Mail senden</button>
+    <button id="micBtn" aria-label="Diktieren">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V22h2v-3.08A7 7 0 0 0 19 12h-2z"/></svg>
+      <span id="micLabel">Diktieren</span>
+    </button>
+  </div>
+</div>
+
+<div id="sheetBg" class="sheet-bg hidden"><div class="sheet" id="sheet"></div></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   Störungslogger – Prototyp
+   Aufbau:
+   1. Store       – Datenmodell + lokale Speicherung (localStorage)
+   2. ReportRules – Berichtserzeugung (hier später Regeln/Fachbegriffe ergänzen)
+   3. Speech      – Spracherkennung (Web Speech API) + Fallback
+   4. UI          – Darstellung und Bedienung
+   ===================================================================== */
+
+/* ---------------- 1. Store ---------------- */
+const STORAGE_KEY = "stoerungslogger.v1";
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+const Store = {
+  data: { version: 1, settings: { email: "" }, incidents: [], currentId: null },
+  storageOk: true,
+
+  load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) this.data = Object.assign(this.data, JSON.parse(raw));
+    } catch (e) { this.storageOk = false; }
+    try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+  },
+  save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data)); this.storageOk = true; }
+    catch (e) { this.storageOk = false; UI.status("Speichern fehlgeschlagen – Daten gehen beim Schließen verloren!", "err"); }
+  },
+  current() { return this.data.incidents.find(i => i.id === this.data.currentId) || null; },
+  newIncident() {
+    const now = new Date();
+    const inc = { id: uid(), title: "Störung " + fmtDate(now) + " " + fmtTime(now),
+                  createdAt: now.toISOString(), entries: [], report: null };
+    this.data.incidents.unshift(inc);
+    this.data.currentId = inc.id;
+    this.save();
+    return inc;
+  },
+  /* capturedAt = Zeitpunkt, an dem die Aufnahme gestartet wurde. Wird nie überschrieben. */
+  addEntry(text, capturedAt, source) {
+    const inc = this.current() || this.newIncident();
+    inc.entries.push({ id: uid(), createdAt: capturedAt.toISOString(), source,
+                       originalText: text, text, editedAt: null });
+    inc.entries.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    this.save();
+  },
+  editEntry(id, text) {
+    const e = this.current().entries.find(x => x.id === id);
+    if (!e || e.text === text) return;
+    e.text = text; e.editedAt = new Date().toISOString();   // createdAt bleibt unverändert
+    this.save();
+  },
+  deleteEntry(id) {
+    const inc = this.current();
+    inc.entries = inc.entries.filter(x => x.id !== id);
+    this.save();
+  }
+};
+
+/* ---------------- 2. ReportRules ----------------
+   Erweiterungspunkte für später:
+   - GLOSSARY: Fachbegriffe/Kürzel normalisieren (z. B. "a s 11" -> "AS11")
+   - sections: Reihenfolge und Inhalt der Berichtsabschnitte
+   Regel für den Prototyp: nichts erfinden – nur erfasste Texte + Zeitstempel. */
+const ReportRules = {
+  GLOSSARY: [
+    // [/regex/gi, "Ersatz"]  – noch leer, wird mit realen Beispielen gefüllt
+  ],
+  normalize(text) {
+    let t = text.trim().replace(/\s+/g, " ");
+    for (const [re, rep] of this.GLOSSARY) t = t.replace(re, rep);
+    if (t && !/[.!?]$/.test(t)) t += ".";
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  },
+  sections: [
+    (inc) => ["STÖRBERICHT – ENTWURF", "=".repeat(22), "", "Störung: " + inc.title],
+    (inc) => {
+      const e = inc.entries;
+      const first = new Date(e[0].createdAt), last = new Date(e[e.length - 1].createdAt);
+      const out = ["Datum: " + fmtDate(first, true),
+                   "Erster Eintrag: " + fmtTime(first) + " Uhr",
+                   "Letzter Eintrag: " + fmtTime(last) + " Uhr"];
+      const mins = Math.round((last - first) / 60000);
+      if (e.length > 1) out.push("Dokumentierter Zeitraum: " + fmtDuration(mins) +
+                                 " (zwischen erstem und letztem Eintrag, keine Ausfallzeit)");
+      return out;
+    },
+    (inc) => ["", "Ablauf:"].concat(inc.entries.map(e =>
+      fmtTime(new Date(e.createdAt)) + " Uhr – " + ReportRules.normalize(e.text))),
+    (inc) => ["", "---", "Erstellt aus " + inc.entries.length + " erfassten Einträgen. Bitte vor dem Versand prüfen."]
+  ],
+  build(inc) {
+    if (!inc || !inc.entries.length) return "";
+    return this.sections.flatMap(fn => fn(inc)).join("\n");
+  }
+};
+
+/* ---------------- 3. Speech ---------------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const isAndroid = /Android/i.test(navigator.userAgent);
+const ENV_MSG = {
+  unsupported: "Dieser Browser hat keine Spracherkennung. Bitte die Seite in Google Chrome öffnen.",
+  insecure: "Spracherkennung braucht eine sichere Verbindung (https://). Diese Seite ist nicht sicher geladen.",
+  policy: "In dieser eingebetteten Ansicht (z. B. claude.ai-Vorschau) ist das Mikrofon technisch gesperrt. Direktes Diktieren geht nur, wenn die App als eigene Seite in Chrome geöffnet wird.",
+  "start-timeout": "Die Spracherkennung reagiert nicht. Das passiert in eingebetteten Ansichten und In-App-Browsern (z. B. im Browser der Claude-App). Bitte die Seite direkt in Google Chrome öffnen."
+};
+const Speech = {
+  supported: !!SR,
+  blocked: false, rec: null, active: false, done: true, startedAt: null, finals: [], interim: "", error: null,
+  startTimer: null, stopTimer: null,
+
+  /* Prüft vor dem Start, ob Diktieren hier überhaupt möglich ist. */
+  envProblem() {
+    if (!SR) return "unsupported";
+    if (!window.isSecureContext) return "insecure";
+    try {
+      const fp = document.permissionsPolicy || document.featurePolicy;
+      if (fp && fp.allowsFeature && !fp.allowsFeature("microphone")) return "policy";
+    } catch (e) {}
+    return null;
+  },
+
+  start() {
+    if (this.rec && !this.done) {               // erneutes Tippen während des Starts = abbrechen
+      this.error = "aborted"; try { this.rec.abort(); } catch (e) {} this.finish(); return;
+    }
+    const problem = this.envProblem();
+    if (problem) { this.blocked = true; UI.status(ENV_MSG[problem], "err", true); UI.openManualEntry(ENV_MSG[problem]); return; }
+    if (this.blocked) { UI.openManualEntry(ENV_MSG[this.blockReason] || "Direkte Spracherkennung ist hier blockiert."); return; }
+    this.finals = []; this.interim = ""; this.error = null; this.done = false; this.startedAt = new Date();
+    const r = new SR();
+    r.lang = "de-DE"; r.continuous = true; r.interimResults = true; r.maxAlternatives = 1;
+    /* Watchdog: kommt nach 5 s kein Start-Signal, ist das Mikrofon blockiert – nicht endlos warten. */
+    this.startTimer = setTimeout(() => {
+      if (this.active || this.done) return;
+      this.error = "start-timeout"; try { r.abort(); } catch (e) {} this.finish();
+    }, 5000);
+    r.onstart = () => { clearTimeout(this.startTimer); if (this.done) return; this.active = true; UI.recording(true); };
+    r.onresult = (ev) => {
+      let interim = "";
+      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+        const t = ev.results[i][0].transcript.trim();
+        if (!t) continue;
+        if (ev.results[i].isFinal) this.addFinal(t, i); else interim = t;
+      }
+      this.interim = interim;
+      UI.liveText(this.text() + (interim ? " " + interim : ""));
+    };
+    r.onerror = (ev) => { if (!this.error) this.error = ev.error; };
+    r.onend = () => { this.finish(); };
+    this.rec = r;
+    try { r.start(); UI.status("Mikrofon wird gestartet … (erneut tippen zum Abbrechen)", "info"); }
+    catch (e) { this.error = "start-failed"; this.finish(); }
+  },
+  /* Android-Chrome liefert im continuous-Modus teils kumulierte Ergebnisse.
+     Gleiche Ergebnis-Indizes werden ersetzt, wiederholter Text nicht doppelt übernommen. */
+  addFinal(t, idx) {
+    const prev = this.finals[this.finals.length - 1];
+    if (prev && (prev.idx === idx || (isAndroid && t.toLowerCase().startsWith(prev.t.toLowerCase())))) prev.t = t, prev.idx = idx;
+    else if (!prev || prev.t.toLowerCase() !== t.toLowerCase()) this.finals.push({ t, idx });
+  },
+  text() { return this.finals.map(f => f.t).join(" ").trim(); },
+  diagnose() {
+    const yes = b => b ? "ja ✓" : "NEIN ✗";
+    let embedded = false; try { embedded = window.self !== window.top; } catch (e) { embedded = true; }
+    const p = this.envProblem();
+    return "Spracherkennung im Browser: " + yes(!!SR) +
+      "\nSichere Verbindung (https): " + yes(window.isSecureContext) +
+      "\nEingebettete Ansicht: " + (embedded ? "ja (Mikrofon meist gesperrt)" : "nein ✓") +
+      "\nMikrofon erlaubt für diese Seite: " + (p === "policy" ? "NEIN ✗ (gesperrt)" : "nicht gesperrt") +
+      (this.blocked ? "\nLetzter Versuch: blockiert" : "") +
+      "\n→ " + (p || this.blocked ? "Direktes Diktieren hier nicht möglich – Tastatur-Spracheingabe nutzen." : "Direktes Diktieren sollte funktionieren.");
+  },
+  stop() {
+    if (!(this.rec && this.active)) return;
+    UI.status("Erkennung wird abgeschlossen …", "info");
+    try { this.rec.stop(); } catch (e) {}
+    this.stopTimer = setTimeout(() => this.finish(), 4000);  // falls kein Ende-Signal kommt
+  },
+  finish() {
+    if (this.done) return;                      // nur einmal abschließen
+    this.done = true; this.active = false;
+    clearTimeout(this.startTimer); clearTimeout(this.stopTimer);
+    UI.recording(false);
+    let text = this.text();
+    if (!text && this.interim && this.error !== "not-allowed") text = this.interim.trim(); // letzte Zwischenerkennung retten
+    if (text) {
+      Store.addEntry(text, this.startedAt, "sprache");
+      UI.render();
+      UI.status("✓ Text erkannt und gespeichert (" + fmtTime(this.startedAt) + " Uhr).", "ok");
+      return;
+    }
+    const msg = {
+      "not-allowed": "Kein Zugriff auf das Mikrofon. Bitte im Browser erlauben (Schloss-Symbol in der Adressleiste → Berechtigungen → Mikrofon).",
+      "service-not-allowed": "Spracherkennung ist hier blockiert (z. B. in eingebetteter Ansicht). Bitte die Tastatur-Spracheingabe nutzen.",
+      "audio-capture": "Kein Mikrofon gefunden oder es wird von einer anderen App benutzt.",
+      "network": "Spracherkennung braucht eine Internetverbindung. Alternativ Tastatur-Spracheingabe nutzen.",
+      "no-speech": "Es wurde keine Sprache erkannt. Bitte erneut versuchen.",
+      "aborted": "Aufnahme abgebrochen – kein Text übernommen.",
+      "start-failed": "Aufnahme konnte nicht gestartet werden.",
+      "start-timeout": ENV_MSG["start-timeout"]
+    }[this.error] || "Kein Text erkannt – es wurde nichts gespeichert.";
+    UI.status(msg, "err", true);
+    if (["not-allowed", "service-not-allowed", "start-failed", "start-timeout"].includes(this.error)) { this.blocked = true; this.blockReason = this.error; }
+    if (["not-allowed", "service-not-allowed", "network", "start-failed", "start-timeout"].includes(this.error)) {
+      UI.openManualEntry(msg, this.startedAt);
+    }
+  }
+};
+
+/* ---------------- Hilfsfunktionen ---------------- */
+const pad = n => String(n).padStart(2, "0");
+function fmtTime(d) { return pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+function fmtDate(d, year) { return pad(d.getDate()) + "." + pad(d.getMonth() + 1) + "." + (year ? d.getFullYear() : ""); }
+function fmtDuration(m) { return m < 60 ? m + " min" : Math.floor(m / 60) + " h " + pad(m % 60) + " min"; }
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+const $ = id => document.getElementById(id);
+
+/* ---------------- 4. UI ---------------- */
+const UI = {
+  statusTimer: null,
+  render() {
+    const inc = Store.current();
+    $("incTitle").textContent = inc ? inc.title : "Noch keine Störung";
+    const box = $("entries");
+    if (!inc || !inc.entries.length) {
+      box.innerHTML = '<div class="empty">Noch keine Einträge.<br>Unten auf <b>Diktieren</b> tippen und sprechen.<br>' +
+        (inc ? "" : "Eine neue Störung wird automatisch angelegt.") + "</div>";
+      return;
+    }
+    box.innerHTML = inc.entries.map(e => {
+      const d = new Date(e.createdAt);
+      const meta = e.editedAt ? '<div class="meta">bearbeitet ' + fmtTime(new Date(e.editedAt)) + " Uhr</div>" :
+                   (e.source === "manuell" ? '<div class="meta">manuell erfasst</div>' : "");
+      return '<div class="entry"><time>' + fmtTime(d) + '</time><div class="body">' + esc(e.text) + meta +
+             '</div><button class="more" data-id="' + e.id + '" aria-label="Eintrag bearbeiten">⋯</button></div>';
+    }).join("");
+    box.scrollTop = box.scrollHeight;
+  },
+  status(msg, kind, keep) {
+    const s = $("status");
+    clearTimeout(this.statusTimer);
+    s.className = kind || ""; s.innerHTML = msg;
+    if (!keep && kind !== "rec" && kind !== "info") this.statusTimer = setTimeout(() => s.classList.add("hidden"), 6000);
+  },
+  recording(on) {
+    $("micBtn").classList.toggle("rec", on);
+    $("micLabel").textContent = on ? "Stopp – Text übernehmen" : "Diktieren";
+    if (on) this.status('<span class="dot"></span><b>AUFNAHME LÄUFT</b> – jetzt sprechen<span class="live" id="live">…</span>', "rec");
+  },
+  liveText(t) { const l = $("live"); if (l) l.textContent = t || "…"; },
+
+  ask(msg, yesLabel, onYes) {
+    this.openSheet('<h2>Bitte bestätigen</h2><p>' + esc(msg) + '</p><div class="row"><button class="btn" data-act="close">Abbrechen</button>' +
+      '<button class="btn primary" id="askYes">' + esc(yesLabel) + '</button></div>');
+    $("askYes").onclick = () => { this.closeSheet(); onYes(); };
+  },
+  openSheet(html) { $("sheet").innerHTML = html; $("sheetBg").classList.remove("hidden"); },
+  closeSheet() { $("sheetBg").classList.add("hidden"); $("sheet").innerHTML = ""; },
+
+  openManualEntry(reason, capturedAt) {
+    const at = capturedAt || new Date();
+    this.openSheet('<h2>Eintrag erfassen</h2>' + (reason ? '<div class="note">' + esc(reason) + '</div>' : "") +
+      '<p class="hint">Tipp: Auf das Mikrofon-Symbol der Handy-Tastatur (z. B. Gboard) tippen und diktieren.</p>' +
+      '<label>Zeitstempel: ' + fmtTime(at) + ' Uhr (Zeitpunkt des Tippens auf „Diktieren“)</label>' +
+      '<textarea id="manualText" autofocus></textarea>' +
+      '<div class="row"><button class="btn" data-act="close">Abbrechen</button><button class="btn primary" id="manualSave">Speichern</button></div>');
+    setTimeout(() => $("manualText").focus(), 50);
+    $("manualSave").onclick = () => {
+      const t = $("manualText").value.trim();
+      if (!t) return;
+      Store.addEntry(t, at, "manuell"); this.closeSheet(); this.render();
+      this.status("✓ Eintrag gespeichert (" + fmtTime(at) + " Uhr).", "ok");
+    };
+  },
+
+  openEntry(id) {
+    const e = Store.current().entries.find(x => x.id === id);
+    const d = new Date(e.createdAt);
+    this.openSheet('<h2>Eintrag bearbeiten</h2>' +
+      '<label>Erfasst am ' + fmtDate(d, true) + ' um ' + fmtTime(d) + ':' + pad(d.getSeconds()) + ' Uhr (unveränderlich)</label>' +
+      '<textarea id="editText">' + esc(e.text) + '</textarea>' +
+      (e.editedAt ? '<label>Ursprünglich erkannter Text</label><div class="orig">' + esc(e.originalText) + '</div>' : "") +
+      '<div class="row"><button class="btn danger" id="delEntry">Löschen</button><button class="btn" data-act="close">Abbrechen</button>' +
+      '<button class="btn primary" id="saveEntry">Speichern</button></div>');
+    $("saveEntry").onclick = () => { Store.editEntry(id, $("editText").value.trim()); this.closeSheet(); this.render(); };
+    $("delEntry").onclick = () => {
+      this.ask("Eintrag von " + fmtTime(d) + " Uhr wirklich löschen?", "Löschen", () => { Store.deleteEntry(id); this.render(); this.status("Eintrag gelöscht.", "ok"); });
+    };
+  },
+
+  openIncidents() {
+    const list = Store.data.incidents;
+    this.openSheet('<h2>Störungen</h2>' +
+      '<button class="btn primary" style="width:100%;margin-bottom:12px" id="sheetNewInc">＋ Neue Störung</button>' +
+      (list.length ? list.map(i => '<button class="list-item' + (i.id === Store.data.currentId ? " active" : "") +
+        '" data-inc="' + i.id + '"><b>' + esc(i.title) + '</b><small>' + i.entries.length + ' Einträge · angelegt ' +
+        fmtDate(new Date(i.createdAt), true) + '</small></button>').join("") : '<p class="hint">Noch keine Störungen.</p>') +
+      (Store.current() ? '<label>Name der aktuellen Störung</label><input id="incName" value="' + esc(Store.current().title) + '">' +
+        '<div class="row"><button class="btn danger" id="delInc">Störung löschen</button><button class="btn" id="saveIncName">Name speichern</button></div>' : "") +
+      '<div class="row"><button class="btn" data-act="close">Schließen</button></div>');
+    $("sheetNewInc").onclick = () => { Store.newIncident(); this.closeSheet(); this.render(); this.status("Neue Störung angelegt.", "ok"); };
+    $("sheet").querySelectorAll("[data-inc]").forEach(b => b.onclick = () => {
+      Store.data.currentId = b.dataset.inc; Store.save(); this.closeSheet(); this.render();
+    });
+    if ($("saveIncName")) $("saveIncName").onclick = () => {
+      const v = $("incName").value.trim(); if (v) { Store.current().title = v; Store.save(); } this.closeSheet(); this.render();
+    };
+    if ($("delInc")) $("delInc").onclick = () => {
+      const inc = Store.current();
+      this.ask("Störung „" + inc.title + "“ mit " + inc.entries.length + " Einträgen endgültig löschen?", "Endgültig löschen", () => {
+        Store.data.incidents = Store.data.incidents.filter(i => i.id !== inc.id);
+        Store.data.currentId = Store.data.incidents[0] ? Store.data.incidents[0].id : null;
+        Store.save(); this.render(); this.status("Störung gelöscht.", "ok");
+      });
+    };
+  },
+
+  openReport() {
+    const inc = Store.current();
+    if (!inc || !inc.entries.length) { this.status("Noch keine Einträge für einen Bericht.", "err"); return; }
+    if (!inc.report) { inc.report = { text: ReportRules.build(inc), generatedAt: new Date().toISOString(), editedAt: null, handedToMailAt: null }; Store.save(); }
+    const changed = inc.entries.some(e => (e.editedAt || e.createdAt) > inc.report.generatedAt);
+    this.openSheet('<h2>Störbericht prüfen</h2>' +
+      '<p class="hint">Entwurf – bitte prüfen und bei Bedarf ändern. Die Originaleinträge bleiben unverändert erhalten.</p>' +
+      (changed ? '<div class="note">Seit Erstellung des Berichts wurden Einträge hinzugefügt oder geändert. „Neu erzeugen“ übernimmt sie (eigene Änderungen am Bericht gehen dabei verloren).</div>' : "") +
+      (inc.report.handedToMailAt ? '<div class="note">An die Mail-App übergeben am ' + fmtDate(new Date(inc.report.handedToMailAt), true) + ' ' + fmtTime(new Date(inc.report.handedToMailAt)) + ' Uhr. Ob die Mail tatsächlich gesendet wurde, zeigt nur deine Mail-App.</div>' : "") +
+      '<textarea id="reportText">' + esc(inc.report.text) + '</textarea>' +
+      '<div class="row"><button class="btn" id="regen">Neu erzeugen</button><button class="btn" id="copyRep">Kopieren</button></div>' +
+      '<div class="row"><button class="btn" data-act="close">Schließen</button><button class="btn primary" id="repMail">Per E-Mail senden</button></div>');
+    const ta = $("reportText");
+    ta.oninput = () => { inc.report.text = ta.value; inc.report.editedAt = new Date().toISOString(); Store.save(); };
+    $("regen").onclick = () => {
+      const regen = () => { inc.report = { text: ReportRules.build(inc), generatedAt: new Date().toISOString(), editedAt: null, handedToMailAt: null }; Store.save(); this.openReport(); };
+      if (inc.report.editedAt) this.ask("Eigene Änderungen am Bericht verwerfen und neu erzeugen?", "Neu erzeugen", regen); else regen();
+    };
+    $("copyRep").onclick = () => this.copyText(ta.value, "Bericht", ta);
+    $("repMail").onclick = () => this.sendMail();
+  },
+
+  /* Meldung innerhalb des geöffneten Fensters (die Statusleiste liegt dahinter). */
+  sheetMsg(msg, kind) {
+    let box = $("sheetMsg");
+    if (!box) { box = document.createElement("div"); box.id = "sheetMsg"; box.setAttribute("role", "status"); $("sheet").prepend(box); }
+    box.className = "sheetmsg " + (kind || ""); box.innerHTML = msg;
+    box.scrollIntoView({ block: "nearest" });
+  },
+
+  /* Zwischenablage: 1. execCommand (funktioniert auch in eingebetteten Ansichten),
+     2. Clipboard-API. Erfolg wird nur gemeldet, wenn der Browser ihn bestätigt. */
+  async copyText(text, label, selectEl) {
+    let ok = false;
+    const tmp = document.createElement("textarea");
+    tmp.value = text; tmp.setAttribute("readonly", "");
+    tmp.style.cssText = "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;";
+    document.body.appendChild(tmp);
+    let copyEventFired = false;
+    const onCopy = () => { copyEventFired = true; };
+    document.addEventListener("copy", onCopy);
+    try { tmp.focus(); tmp.select(); tmp.setSelectionRange(0, text.length); ok = document.execCommand("copy") && copyEventFired; } catch (e) { ok = false; }
+    document.removeEventListener("copy", onCopy);
+    tmp.remove();
+    if (!ok && navigator.clipboard && navigator.clipboard.writeText) {
+      try { await navigator.clipboard.writeText(text); ok = true; } catch (e) { ok = false; }
+    }
+    if (ok) { this.sheetMsg("✓ " + label + " in die Zwischenablage kopiert (" + text.length + " Zeichen). Jetzt in der Mail-App lange drücken → Einfügen.", "ok"); return true; }
+    if (selectEl) { selectEl.focus(); selectEl.select(); }
+    this.sheetMsg("✗ Kopieren wurde vom Browser blockiert – die Zwischenablage ist <b>unverändert</b>." +
+      (selectEl ? " Der Text ist markiert: lange auf die Markierung drücken → <b>Kopieren</b>."
+                : " Bitte unter „Bericht prüfen“ lange in den Text drücken → <b>Alles auswählen</b> → <b>Kopieren</b>."), "err");
+    return false;
+  },
+
+  sendMail() {
+    const inc = Store.current();
+    if (!inc || !inc.entries.length) { this.status("Noch keine Einträge für einen Bericht.", "err"); return; }
+    if (!inc.report) { this.openReport(); return; }   // erst prüfen lassen
+    const to = Store.data.settings.email || "";
+    const subject = inc.title;
+    const body = inc.report.text;
+    const url = "mailto:" + encodeURIComponent(to) + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+    const canShare = !!navigator.share && (!navigator.canShare || navigator.canShare({ text: body }));
+    this.openSheet('<h2>Bericht per E-Mail senden</h2>' +
+      '<label>Empfänger</label><div class="orig" id="mailTo">' + (to ? esc(to) : "– keine Adresse hinterlegt (⚙ Einstellungen) –") + '</div>' +
+      '<label>Betreff</label><div class="orig" id="mailSubj">' + esc(subject) + '</div>' +
+      '<a class="btn primary linkbtn" id="mailLink" href="' + esc(url) + '" target="_blank" rel="noopener">Mail-App öffnen</a>' +
+      (canShare ? '<button class="btn linkbtn" id="mailShare">Teilen … (z. B. Gmail)</button>' : "") +
+      '<p class="hint">Falls sich nichts öffnet: Bericht kopieren, Mail-App selbst öffnen und einfügen.</p>' +
+      '<div class="row">' + (to ? '<button class="btn" id="copyTo">Adresse kopieren</button>' : "") +
+      '<button class="btn" id="copyMail">Bericht kopieren</button></div>' +
+      (url.length > 1800 ? '<div class="note">Langer Bericht – manche Mail-Apps kürzen ihn. Im Zweifel „Bericht kopieren“ nutzen.</div>' : "") +
+      '<div class="row"><button class="btn" data-act="close">Schließen</button></div>');
+
+    /* Ob die Mail-App aufging, lässt sich nur indirekt erkennen: dann geht diese Seite in den Hintergrund. */
+    $("mailLink").onclick = () => {
+      let left = false;
+      const onHide = () => { if (document.hidden) left = true; };
+      document.addEventListener("visibilitychange", onHide);
+      window.addEventListener("pagehide", onHide);
+      this.sheetMsg("Mail-Link wurde ausgelöst … warte auf die Mail-App.", "info");
+      setTimeout(() => {
+        document.removeEventListener("visibilitychange", onHide);
+        window.removeEventListener("pagehide", onHide);
+        if (!$("mailLink")) return;            // Fenster inzwischen geschlossen
+        if (left) {
+          inc.report.handedToMailAt = new Date().toISOString(); Store.save();
+          this.sheetMsg("📨 Mail-App wurde geöffnet. <b>Noch nicht versendet</b> – bitte dort prüfen und auf Senden tippen.", "ok");
+        } else {
+          this.sheetMsg("✗ Es hat sich <b>keine Mail-App geöffnet</b> (in der claude.ai-Testansicht werden Mail-Links meist blockiert). Bitte „Bericht kopieren“ nutzen und in eine neue Mail einfügen.", "err");
+        }
+      }, 2500);
+    };
+    if ($("mailShare")) $("mailShare").onclick = async () => {
+      try {
+        await navigator.share({ title: subject, text: (to ? "An: " + to + "\n\n" : "") + body });
+        inc.report.handedToMailAt = new Date().toISOString(); Store.save();
+        this.sheetMsg("📨 Bericht an die gewählte App übergeben. <b>Noch nicht versendet</b> – dort auf Senden tippen.", "ok");
+      } catch (e) {
+        this.sheetMsg(e && e.name === "AbortError" ? "Teilen abgebrochen – nichts übergeben." : "✗ Teilen ist hier blockiert. Bitte „Bericht kopieren“ nutzen.", "err");
+      }
+    };
+    if ($("copyTo")) $("copyTo").onclick = () => this.copyText(to, "Adresse");
+    $("copyMail").onclick = () => this.copyText(body, "Bericht");
+  },
+
+  openSettings() {
+    this.openSheet('<h2>Einstellungen</h2>' +
+      '<label for="setEmail">Empfänger für Störberichte</label>' +
+      '<input id="setEmail" type="email" inputmode="email" placeholder="name@firma.de" value="' + esc(Store.data.settings.email) + '">' +
+      '<p class="hint">Wird nur auf diesem Gerät gespeichert.</p>' +
+      '<label>Diagnose Spracherkennung</label><div class="orig">' + Speech.diagnose() +
+      '\nSpeicherung: ' + (Store.storageOk ? "lokal auf diesem Gerät" : "NICHT verfügbar") +
+      '\nStörungen: ' + Store.data.incidents.length + '</div>' +
+      '<div class="row"><button class="btn" id="manualBtn">Eintrag per Tastatur erfassen</button></div>' +
+      '<div class="row"><button class="btn" data-act="close">Abbrechen</button><button class="btn primary" id="saveSet">Speichern</button></div>');
+    $("saveSet").onclick = () => { Store.data.settings.email = $("setEmail").value.trim(); Store.save(); this.closeSheet(); this.status("Einstellungen gespeichert.", "ok"); };
+    $("manualBtn").onclick = () => this.openManualEntry("");
+  }
+};
+
+/* ---------------- Start ---------------- */
+Store.load();
+UI.render();
+$("micBtn").onclick = () => Speech.active ? Speech.stop() : Speech.start();
+$("incBtn").onclick = () => UI.openIncidents();
+$("newIncBtn").onclick = () => { Store.newIncident(); UI.render(); UI.status("Neue Störung angelegt – jetzt diktieren.", "ok"); };
+$("settingsBtn").onclick = () => UI.openSettings();
+$("reportBtn").onclick = () => UI.openReport();
+$("mailBtn").onclick = () => UI.sendMail();
+$("entries").onclick = ev => { const b = ev.target.closest(".more"); if (b) UI.openEntry(b.dataset.id); };
+$("sheetBg").onclick = ev => { if (ev.target.id === "sheetBg" || ev.target.dataset.act === "close") UI.closeSheet(); };
+document.addEventListener("visibilitychange", () => { if (document.hidden && Speech.active) Speech.stop(); });
+if (!Speech.supported) UI.status("Spracherkennung in diesem Browser nicht verfügbar – „Diktieren“ öffnet die Tastatur-Spracheingabe.", "info", true);
+setTimeout(() => { $("splash").classList.add("fade"); setTimeout(() => $("splash").remove(), 350); }, 1000);
+</script>
+</body>
+</html>
