@@ -223,21 +223,47 @@ const ReportRules = {
   }
 };
 
-/* ---------------- 3. Speech ---------------- */
+/* ---------------- 3. Speech ----------------
+   Ablauf eines Diktats:
+   1. Umgebung prüfen (API vorhanden, HTTPS, nicht gesperrt)
+   2. Mikrofonberechtigung VORHER klären (Chrome-Dialog läuft ohne Zeitlimit)
+   3. Erkennung starten; Watchdog nur für den Start der Erkennung selbst
+   4. Android: Einzeläußerung (continuous=false) – Text wird nach Sprechpause übernommen
+   Fehler werden mit Code protokolliert (Diagnose in den Einstellungen) und nie dauerhaft gesperrt. */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const isAndroid = /Android/i.test(navigator.userAgent);
+const DIAG_KEY = "stoerungslogger.diag";
+const START_TIMEOUT_MS = 8000;
 const ENV_MSG = {
   unsupported: "Dieser Browser hat keine Spracherkennung. Bitte die Seite in Google Chrome öffnen.",
   insecure: "Spracherkennung braucht eine sichere Verbindung (https://). Diese Seite ist nicht sicher geladen.",
-  policy: "In dieser eingebetteten Ansicht (z. B. claude.ai-Vorschau) ist das Mikrofon technisch gesperrt. Direktes Diktieren geht nur, wenn die App als eigene Seite in Chrome geöffnet wird.",
-  "start-timeout": "Die Spracherkennung reagiert nicht. Das passiert in eingebetteten Ansichten und In-App-Browsern (z. B. im Browser der Claude-App). Bitte die Seite direkt in Google Chrome öffnen."
+  policy: "In dieser eingebetteten Ansicht (z. B. claude.ai-Vorschau) ist das Mikrofon technisch gesperrt. Direktes Diktieren geht nur, wenn die App als eigene Seite in Chrome geöffnet wird."
 };
+const ERR_MSG = {
+  "not-allowed": "Kein Zugriff auf das Mikrofon. In Chrome: Schloss-Symbol links neben der Adresse → Berechtigungen → Mikrofon → Zulassen. Danach Seite neu laden.",
+  "service-not-allowed": "Chrome lässt die Spracherkennung nicht zu. Prüfen: Ist die App „Google“ installiert und aktiviert? Android-Einstellungen → Apps → Google → aktiviert, Berechtigung Mikrofon erlaubt.",
+  "audio-capture": "Kein Mikrofon verfügbar oder es wird gerade von einer anderen App benutzt (z. B. Telefonat, Sprachmemo).",
+  "network": "Die Spracherkennung von Chrome braucht eine Internetverbindung.",
+  "no-speech": "Es wurde keine Sprache erkannt. Bitte direkt nach dem Antippen sprechen.",
+  "aborted": "Aufnahme abgebrochen – kein Text übernommen.",
+  "language-not-supported": "Deutsch wird von der Spracherkennung auf diesem Gerät nicht unterstützt.",
+  "start-failed": "Die Spracherkennung konnte nicht gestartet werden.",
+  "start-timeout": "Die Spracherkennung hat innerhalb von 8 Sekunden nicht gestartet.",
+  "no-result": "Aufnahme beendet, aber kein Text erkannt – es wurde nichts gespeichert."
+};
+/* Bei diesen Fehlern ist direktes Diktieren gerade nicht nutzbar -> Tastatur-Eingabe anbieten */
+const FALLBACK_ERRORS = ["not-allowed", "service-not-allowed", "audio-capture", "network", "language-not-supported", "start-failed", "start-timeout"];
+
 const Speech = {
   supported: !!SR,
-  blocked: false, rec: null, active: false, done: true, startedAt: null, finals: [], interim: "", error: null,
-  startTimer: null, stopTimer: null,
+  rec: null, active: false, done: true, startedAt: null, finals: [], interim: "", error: null, errorDetail: "",
+  startTimer: null, stopTimer: null, t0: 0, log: [], lastError: null, lastSuccess: null,
 
-  /* Prüft vor dem Start, ob Diktieren hier überhaupt möglich ist. */
+  loadDiag() { try { const d = JSON.parse(localStorage.getItem(DIAG_KEY) || "{}"); this.lastError = d.lastError || null; this.lastSuccess = d.lastSuccess || null; this.log = d.log || []; } catch (e) {} },
+  saveDiag() { try { localStorage.setItem(DIAG_KEY, JSON.stringify({ lastError: this.lastError, lastSuccess: this.lastSuccess, log: this.log })); } catch (e) {} },
+  note(ev) { this.log.push(((performance.now() - this.t0) / 1000).toFixed(1) + " s " + ev); if (this.log.length > 30) this.log.shift(); },
+
+  /* Prüft vor dem Start, ob Diktieren hier überhaupt möglich ist (unabänderliche Gründe). */
   envProblem() {
     if (!SR) return "unsupported";
     if (!window.isSecureContext) return "insecure";
@@ -248,22 +274,65 @@ const Speech = {
     return null;
   },
 
-  start() {
+  async micPermissionState() {
+    try { return (await navigator.permissions.query({ name: "microphone" })).state; } catch (e) { return "unbekannt"; }
+  },
+
+  /* Klärt die Mikrofonberechtigung, bevor die Erkennung startet. Liefert "ok" oder einen Fehlercode. */
+  async ensureMic() {
+    const state = await this.micPermissionState();
+    this.note("Berechtigung: " + state);
+    if (state === "granted") return "ok";
+    if (state === "denied") return "not-allowed";
+    if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return "ok"; // Erkennung fragt selbst
+    UI.status("Bitte den Mikrofonzugriff im Chrome-Dialog <b>erlauben</b> …", "info", true);
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+      s.getTracks().forEach(t => t.stop());       // sofort freigeben – keine Audioaufnahme
+      this.note("Mikrofon freigegeben");
+      return "ok";
+    } catch (e) {
+      this.note("getUserMedia-Fehler: " + e.name);
+      this.errorDetail = e.name;
+      if (e.name === "NotFoundError" || e.name === "NotReadableError" || e.name === "AbortError") return "audio-capture";
+      return "not-allowed";
+    }
+  },
+
+  async start() {
     if (this.rec && !this.done) {               // erneutes Tippen während des Starts = abbrechen
       this.error = "aborted"; try { this.rec.abort(); } catch (e) {} this.finish(); return;
     }
+    if (this.preparing) return;                 // Berechtigungsdialog läuft bereits
     const problem = this.envProblem();
-    if (problem) { this.blocked = true; UI.status(ENV_MSG[problem], "err", true); UI.openManualEntry(ENV_MSG[problem]); return; }
-    if (this.blocked) { UI.openManualEntry(ENV_MSG[this.blockReason] || "Direkte Spracherkennung ist hier blockiert."); return; }
-    this.finals = []; this.interim = ""; this.error = null; this.done = false; this.startedAt = new Date();
-    const r = new SR();
-    r.lang = "de-DE"; r.continuous = true; r.interimResults = true; r.maxAlternatives = 1;
-    /* Watchdog: kommt nach 5 s kein Start-Signal, ist das Mikrofon blockiert – nicht endlos warten. */
-    this.startTimer = setTimeout(() => {
-      if (this.active || this.done) return;
-      this.error = "start-timeout"; try { r.abort(); } catch (e) {} this.finish();
-    }, 5000);
-    r.onstart = () => { clearTimeout(this.startTimer); if (this.done) return; this.active = true; UI.recording(true); };
+    if (problem) { UI.status(ENV_MSG[problem], "err", true); UI.openManualEntry(ENV_MSG[problem]); return; }
+
+    this.t0 = performance.now(); this.log = []; this.errorDetail = "";
+    this.startedAt = new Date();                // Erfassungszeitpunkt = Antippen
+    this.note("Diktieren angetippt (" + (isAndroid ? "Android" : "kein Android") + ")");
+    this.preparing = true;
+    const perm = await this.ensureMic();
+    this.preparing = false;
+    if (perm !== "ok") { this.done = false; this.error = perm; this.finish(); return; }
+
+    this.finals = []; this.interim = ""; this.error = null; this.done = false;
+    let r;
+    try { r = new SR(); } catch (e) { this.errorDetail = e.name || String(e); this.error = "start-failed"; this.finish(); return; }
+    r.lang = "de-DE";
+    r.continuous = !isAndroid;                  // Android: Einzeläußerung ist zuverlässiger
+    r.interimResults = true; r.maxAlternatives = 1;
+    const started = (ev) => {
+      this.note(ev);
+      clearTimeout(this.startTimer);
+      if (this.done || this.active) return;
+      this.active = true; UI.recording(true);
+    };
+    r.onstart = () => started("start");
+    r.onaudiostart = () => started("audiostart");
+    r.onsoundstart = () => this.note("soundstart");
+    r.onspeechstart = () => this.note("speechstart");
+    r.onspeechend = () => this.note("speechend");
+    r.onnomatch = () => this.note("nomatch");
     r.onresult = (ev) => {
       let interim = "";
       for (let i = ev.resultIndex; i < ev.results.length; i++) {
@@ -272,15 +341,21 @@ const Speech = {
         if (ev.results[i].isFinal) this.addFinal(t, i); else interim = t;
       }
       this.interim = interim;
+      this.note("result" + (interim ? " (vorläufig)" : " (fertig)"));
       UI.liveText(this.text() + (interim ? " " + interim : ""));
     };
-    r.onerror = (ev) => { if (!this.error) this.error = ev.error; };
-    r.onend = () => { this.finish(); };
+    r.onerror = (ev) => { this.note("error: " + ev.error + (ev.message ? " – " + ev.message : "")); if (!this.error) { this.error = ev.error; this.errorDetail = ev.message || ""; } };
+    r.onend = () => { this.note("end"); this.finish(); };
     this.rec = r;
-    try { r.start(); UI.status("Mikrofon wird gestartet … (erneut tippen zum Abbrechen)", "info"); }
-    catch (e) { this.error = "start-failed"; this.finish(); }
+    this.startTimer = setTimeout(() => {
+      if (this.active || this.done) return;
+      this.note("Watchdog: kein Start nach " + START_TIMEOUT_MS / 1000 + " s");
+      this.error = "start-timeout"; try { r.abort(); } catch (e) {} this.finish();
+    }, START_TIMEOUT_MS);
+    try { r.start(); this.note("start() aufgerufen"); UI.status("Spracherkennung wird gestartet … (erneut tippen zum Abbrechen)", "info", true); }
+    catch (e) { this.note("start() Ausnahme: " + (e.name || e)); this.errorDetail = e.name || String(e); this.error = "start-failed"; this.finish(); }
   },
-  /* Android-Chrome liefert im continuous-Modus teils kumulierte Ergebnisse.
+  /* Android-Chrome liefert teils kumulierte Ergebnisse.
      Gleiche Ergebnis-Indizes werden ersetzt, wiederholter Text nicht doppelt übernommen. */
   addFinal(t, idx) {
     const prev = this.finals[this.finals.length - 1];
@@ -292,18 +367,23 @@ const Speech = {
     const yes = b => b ? "ja ✓" : "NEIN ✗";
     let embedded = false; try { embedded = window.self !== window.top; } catch (e) { embedded = true; }
     const p = this.envProblem();
-    return "Spracherkennung im Browser: " + yes(!!SR) +
+    const when = iso => iso ? fmtDate(new Date(iso), true) + " " + fmtTime(new Date(iso)) : "";
+    return "Spracherkennung im Browser: " + yes(!!SR) + (SR ? (window.SpeechRecognition ? " (SpeechRecognition)" : " (webkitSpeechRecognition)") : "") +
       "\nSichere Verbindung (https): " + yes(window.isSecureContext) +
       "\nEingebettete Ansicht: " + (embedded ? "ja (Mikrofon meist gesperrt)" : "nein ✓") +
-      "\nMikrofon erlaubt für diese Seite: " + (p === "policy" ? "NEIN ✗ (gesperrt)" : "nicht gesperrt") +
-      (this.blocked ? "\nLetzter Versuch: blockiert" : "") +
-      "\n→ " + (p || this.blocked ? "Direktes Diktieren hier nicht möglich – Tastatur-Spracheingabe nutzen." : "Direktes Diktieren sollte funktionieren.");
+      "\nMikrofon für diese Seite gesperrt: " + (p === "policy" ? "JA ✗" : "nein ✓") +
+      '\nMikrofon-Berechtigung: <span id="permState">wird geprüft …</span>' +
+      "\nModus: " + (isAndroid ? "Android – Einzeläußerung" : "Dauererkennung") +
+      "\nLetzter Erfolg: " + (this.lastSuccess ? when(this.lastSuccess) : "–") +
+      "\nLetzter Fehler: " + (this.lastError ? esc(this.lastError.code + (this.lastError.detail ? " (" + this.lastError.detail + ")" : "")) + ", " + when(this.lastError.at) : "–") +
+      (this.log.length ? "\n\nAblauf letzter Versuch:\n" + esc(this.log.join("\n")) : "");
   },
   stop() {
     if (!(this.rec && this.active)) return;
+    this.note("Stopp angetippt");
     UI.status("Erkennung wird abgeschlossen …", "info");
     try { this.rec.stop(); } catch (e) {}
-    this.stopTimer = setTimeout(() => this.finish(), 4000);  // falls kein Ende-Signal kommt
+    this.stopTimer = setTimeout(() => { this.note("kein end-Ereignis nach Stopp"); this.finish(); }, 4000);
   },
   finish() {
     if (this.done) return;                      // nur einmal abschließen
@@ -314,27 +394,20 @@ const Speech = {
     if (!text && this.interim && this.error !== "not-allowed") text = this.interim.trim(); // letzte Zwischenerkennung retten
     if (text) {
       Store.addEntry(text, this.startedAt, "sprache");
+      this.lastSuccess = new Date().toISOString(); this.saveDiag();
       UI.render();
       UI.status("✓ Text erkannt und gespeichert (" + fmtTime(this.startedAt) + " Uhr).", "ok");
       return;
     }
-    const msg = {
-      "not-allowed": "Kein Zugriff auf das Mikrofon. Bitte im Browser erlauben (Schloss-Symbol in der Adressleiste → Berechtigungen → Mikrofon).",
-      "service-not-allowed": "Spracherkennung ist hier blockiert (z. B. in eingebetteter Ansicht). Bitte die Tastatur-Spracheingabe nutzen.",
-      "audio-capture": "Kein Mikrofon gefunden oder es wird von einer anderen App benutzt.",
-      "network": "Spracherkennung braucht eine Internetverbindung. Alternativ Tastatur-Spracheingabe nutzen.",
-      "no-speech": "Es wurde keine Sprache erkannt. Bitte erneut versuchen.",
-      "aborted": "Aufnahme abgebrochen – kein Text übernommen.",
-      "start-failed": "Aufnahme konnte nicht gestartet werden.",
-      "start-timeout": ENV_MSG["start-timeout"]
-    }[this.error] || "Kein Text erkannt – es wurde nichts gespeichert.";
+    const code = this.error || "no-result";
+    this.lastError = { code, detail: this.errorDetail || "", at: new Date().toISOString() };
+    this.saveDiag();
+    const msg = (ERR_MSG[code] || ("Spracherkennung meldet einen Fehler.")) + " (Code: " + code + ")";
     UI.status(msg, "err", true);
-    if (["not-allowed", "service-not-allowed", "start-failed", "start-timeout"].includes(this.error)) { this.blocked = true; this.blockReason = this.error; }
-    if (["not-allowed", "service-not-allowed", "network", "start-failed", "start-timeout"].includes(this.error)) {
-      UI.openManualEntry(msg, this.startedAt);
-    }
+    if (FALLBACK_ERRORS.includes(code)) UI.openManualEntry(msg, this.startedAt);
   }
 };
+Speech.loadDiag();
 
 /* ---------------- Hilfsfunktionen ---------------- */
 const pad = n => String(n).padStart(2, "0");
@@ -556,13 +629,18 @@ const UI = {
       '<label for="setEmail">Empfänger für Störberichte</label>' +
       '<input id="setEmail" type="email" inputmode="email" placeholder="name@firma.de" value="' + esc(Store.data.settings.email) + '">' +
       '<p class="hint">Wird nur auf diesem Gerät gespeichert.</p>' +
-      '<label>Diagnose Spracherkennung</label><div class="orig">' + Speech.diagnose() +
+      '<label>Diagnose Spracherkennung</label><div class="orig" id="diagBox">' + Speech.diagnose() +
       '\nSpeicherung: ' + (Store.storageOk ? "lokal auf diesem Gerät" : "NICHT verfügbar") +
       '\nStörungen: ' + Store.data.incidents.length + '</div>' +
-      '<div class="row"><button class="btn" id="manualBtn">Eintrag per Tastatur erfassen</button></div>' +
+      '<div class="row"><button class="btn" id="copyDiag">Diagnose kopieren</button><button class="btn" id="manualBtn">Eintrag per Tastatur</button></div>' +
       '<div class="row"><button class="btn" data-act="close">Abbrechen</button><button class="btn primary" id="saveSet">Speichern</button></div>');
+    Speech.micPermissionState().then(st => {
+      const el = $("permState"); if (!el) return;
+      el.textContent = { granted: "erlaubt ✓", denied: "ABGELEHNT ✗ (Schloss-Symbol → Berechtigungen → Mikrofon)", prompt: "noch nicht gefragt (Chrome fragt beim ersten Diktieren)" }[st] || st;
+    });
     $("saveSet").onclick = () => { Store.data.settings.email = $("setEmail").value.trim(); Store.save(); this.closeSheet(); this.status("Einstellungen gespeichert.", "ok"); };
     $("manualBtn").onclick = () => this.openManualEntry("");
+    $("copyDiag").onclick = () => this.copyText($("diagBox").innerText + "\nBrowser: " + navigator.userAgent, "Diagnose");
   }
 };
 
