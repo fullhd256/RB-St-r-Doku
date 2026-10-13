@@ -2,9 +2,9 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <meta name="theme-color" content="#0f172a">
-<title>Störungslogger</title>
+<title>RB Stör-Doku</title>
 <style>
 :root{
   --bg:#f4f5f7; --card:#ffffff; --text:#0f172a; --muted:#64748b; --line:#e2e8f0;
@@ -28,13 +28,14 @@ button{font:inherit;color:inherit;cursor:pointer}
 .hidden{display:none!important}
 
 /* Splash */
-#splash{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .3s}
+/* Startbildschirm: exakte Hintergrundfarbe des Logos (#0D0D0D) über das ganze Display,
+   Logo in Originalgröße 297 × 87 px, mittig, ca. 1 cm über der Bildschirmmitte */
+#splash{position:fixed;inset:0;z-index:50;background:#0d0d0d;transition:opacity .3s}
 #splash.fade{opacity:0;pointer-events:none}
-.logo-ph{width:96px;height:96px;border-radius:24px;border:2px dashed var(--muted);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px}
-#splash h1{margin:0;font-size:24px;letter-spacing:.2px}
+#splashLogo{position:absolute;left:50%;top:50%;width:297px;height:87px;max-width:none;transform:translate(-50%,calc(-50% - 1cm));display:block}
 
 /* Layout */
-#app{display:flex;flex-direction:column;height:100%;max-width:640px;margin:0 auto}
+#app{display:flex;flex-direction:column;height:var(--vvh,100%);max-width:640px;margin:0 auto}
 header{padding:12px 16px 8px;display:flex;align-items:center;gap:8px}
 .inc-switch{flex:1;min-width:0;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px}
 .inc-switch small{display:block;color:var(--muted);font-size:12px}
@@ -59,17 +60,151 @@ main{flex:1;overflow-y:auto;padding:4px 16px 16px}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#fff;margin-right:8px;animation:pulse 1s infinite}
 @keyframes pulse{50%{opacity:.25}}
 
-.bottom{padding:8px 16px calc(12px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1fr;gap:10px;background:var(--bg)}
+.bottom{padding:8px 16px calc(12px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr;gap:10px;background:var(--bg)}
 .btn{border:1px solid var(--line);background:var(--card);border-radius:var(--radius);min-height:48px;padding:10px 12px;font-weight:600}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-text)}
 .btn.danger{color:var(--rec)}
 #micBtn{grid-column:1 / -1;height:88px;border:none;border-radius:44px;background:var(--accent);color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 6px 20px rgba(29,78,216,.35)}
 #micBtn.rec{background:var(--rec);box-shadow:0 0 0 6px rgba(220,38,38,.25)}
 #micBtn svg{width:32px;height:32px}
+#micBtn.mail{background:var(--accent)}
+#micBtn svg[hidden]{display:none}
+
+/* Anlage, Reiter, Bericht */
+#anlageHead{margin:2px 16px 8px;font-size:30px;font-weight:700;letter-spacing:.5px;background:none;border:none;text-align:left;padding:0;display:flex;align-items:center;gap:10px;color:var(--text)}
+#anlageHead.empty-head{font-size:20px;font-weight:600;color:var(--muted)}
+#anlageHead .edit{font-size:18px;color:var(--muted);font-weight:400}
+.tabs{margin:0 16px 8px;display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
+.tabs button{border:none;background:none;padding:11px 8px;font-weight:600;color:var(--muted)}
+.tabs button.on{background:var(--accent);color:var(--accent-text)}
+.badge{font-size:11px;font-weight:600;padding:1px 6px;border-radius:8px;border:1px solid currentColor;margin-left:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 14px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:8px 14px;font-weight:600;min-height:40px}
+.donebtn{width:100%;margin:4px 0 8px;min-height:52px;border:2px solid var(--ok);color:var(--ok);background:var(--card)}
+.lbl{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px;font-weight:600}
+.field{width:100%;font:inherit;color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+#repSubject{font-weight:600}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:12px 0 8px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:none;background:var(--card);padding:10px 6px;font-weight:600;color:var(--muted);min-height:44px}
+.seg button.on{background:var(--text);color:var(--bg)}
+.repcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:4px 12px}
+.hrow{display:grid;grid-template-columns:118px minmax(0,1fr);align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}
+.hrow:last-child{border-bottom:none}
+.hrow span{color:var(--muted)}
+.hrow .field{padding:7px 9px}
+.ritem{display:flex;gap:8px;margin-bottom:8px;align-items:flex-start}
+.rtimebox{display:flex;flex-direction:column;align-items:center;gap:2px;width:92px;flex:none}
+.rtime{width:92px;font:inherit;font-weight:700;font-variant-numeric:tabular-nums;text-align:center;color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 4px}
+.rtimebox small{font-size:11px;color:var(--muted)}
+.rtext{flex:1;min-width:0;font:inherit;color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 10px;resize:none;overflow:hidden;line-height:1.4}
+.kzhead{display:grid;grid-template-columns:76px minmax(0,1fr) 44px;gap:6px;font-size:12px;color:var(--muted);margin-top:8px}
+.kzrow{display:grid;grid-template-columns:76px minmax(0,1fr) 44px;gap:6px;margin-top:6px}
+.sheet .kzrow input{padding:9px 8px}
+.kzK{font-weight:700;text-transform:uppercase;font-family:ui-monospace,Menlo,Consolas,monospace}
+.kzDel{border:1px solid var(--line);background:var(--card);border-radius:10px;color:var(--rec);font-size:16px}
+details.diag{margin-top:16px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--card)}
+details.diag summary{font-weight:600;color:var(--muted);min-height:32px;display:flex;align-items:center}
+.said{opacity:.8;font-size:13px}
+/* v6 (korrigiert): Register ganz oben, Titel in den Rohdaten, schlichte Eingabe-Buttons */
+.regs{margin:12px 16px 4px!important}
+#anlageHead,#bereichBtn{display:none!important}
+#inputRow .inbtn{height:84px;border:1.5px solid #111;border-radius:18px;background:#fff;color:#111;font-size:18px;font-weight:700;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;padding:0 8px;box-shadow:none;grid-column:auto}
+#inputRow .inbtn .bicon{width:30px;height:30px;color:#111}
+#inputRow #micBtn.rec{background:var(--rec);border-color:var(--rec);color:#fff}
+#inputRow #micBtn.rec .bicon{color:#fff}
+#inputRow{grid-template-columns:1fr 1fr}
+#inputRow.report{grid-template-columns:1fr}
+#inputRow.report .inbtn{display:none!important}
+#inputRow.report #sendBtn{font-size:19px}
+.titlecard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px;margin:4px 0 12px;display:grid;gap:8px}
+.titlecard .tlabel{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.titlecard input{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-width:0}
+.trow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) 44px;gap:8px}
+.tmic{border:1.5px solid #111;background:#fff;color:#111;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0}
+.tmic svg{width:22px;height:22px}
+#tAnlage{font-weight:700;letter-spacing:.3px}
+#tBereich{font-weight:700}
+.tprob{display:flex;gap:8px;align-items:center}
+.tprob input{flex:1}
+.tauto{font-size:12px;color:var(--muted);white-space:nowrap;background:none;border:none;padding:4px}
+.tout{font-size:17px;font-weight:800;line-height:1.3;padding-top:4px;border-top:1px solid var(--line)}
+.tzeit{font-size:14px;color:var(--muted);font-weight:600}
+.steplbl{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:2px 0 6px}
+/* v6: laufende Dokumentation – Register oben, Bericht live */
+.regs{margin:0 16px 8px}
+.bereich{margin:-4px 16px 8px;background:none;border:none;padding:0;text-align:left;color:var(--muted);font-weight:600;font-size:15px;min-height:28px}
+.bereich b{color:var(--text)}
+#sendBtn{height:88px;border:none;border-radius:44px;background:var(--accent);color:#fff;font-size:19px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;min-width:0;padding:0 12px;box-shadow:0 6px 20px rgba(29,78,216,.35)}
+#sendBtn svg{width:28px;height:28px;flex:none}
+#sendBtn[hidden]{display:none}
+.wico{display:none;font-size:30px;line-height:1}
+.inputrow.report{grid-template-columns:76px 76px minmax(0,1fr)}
+.inputrow.report #writeLabel,.inputrow.report #writeSub,.inputrow.report .mlbl{display:none}
+.inputrow.report .wico{display:block}
+#inputRow.report #micBtn .mlbl{display:none}
+#inputRow.report #micBtn{gap:0}
+#inputRow.report #sendBtn{font-size:17px;white-space:nowrap}
+@media (max-width:360px){#inputRow.report #sendBtn{white-space:normal;gap:6px;line-height:1.15;padding:0 8px}#inputRow.report #sendBtn svg{width:22px;height:22px}#inputRow.report #sendBtn span{font-size:15px}.inputrow.report{grid-template-columns:64px 64px minmax(0,1fr)}}
+.inputrow.report #micBtn{padding:0}
+.repview{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:grid;gap:6px}
+.rtitle{font-size:18px;font-weight:800;line-height:1.3}
+.rzeit{font-size:15px;font-weight:600;margin-bottom:10px}
+.rline{padding:7px 0;border-top:1px solid var(--line)}
+.rline b{font-variant-numeric:tabular-nums}
+
+/* v5: Register und Überschrift im Bericht */
+.seg3{grid-template-columns:1fr 1fr 1fr}
+.seg3 button{font-size:14px;padding:10px 4px}
+.headcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px;margin:4px 0 14px;display:grid;gap:8px}
+.headcard input{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 9px}
+.hbig{font-size:22px!important;font-weight:800;letter-spacing:.5px}
+.hbig::placeholder{font-weight:500;letter-spacing:0}
+.hline{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.hstich{flex:1;min-width:0;font-weight:700}
+.hmin{font-size:20px;font-variant-numeric:tabular-nums}
+.hzeit{font-size:14px}
+.hm{width:62px;padding:7px 4px!important;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.hwarn{font-size:13px;color:var(--warn)}
+.para{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;line-height:1.5;white-space:pre-wrap}
+.raw{display:flex;gap:10px;background:var(--card);border:1px dashed var(--line);border-radius:10px;padding:9px 10px;margin-bottom:8px}
+.rawtime{font-weight:700;font-variant-numeric:tabular-nums;min-width:46px}
+.rawbody{flex:1;min-width:0;white-space:pre-wrap}
+.rawmeta{font-size:12px;color:var(--muted);margin-top:3px}
+/* v4: Eingabe wählen, Uhrzeit je Eintrag, Empfänger, Tastatur */
+.inputrow{display:grid;grid-template-columns:1fr 1.6fr;gap:10px}
+.inputrow.single{grid-template-columns:1fr}
+#inputRow #micBtn{grid-column:auto;min-width:0;padding:0 12px}
+#inputRow #writeBtn{min-width:0}
+#writeBtn[hidden]{display:none}
+@media (max-width:360px){#writeBtn{font-size:16px}#micBtn{font-size:18px}.etime{width:84px}}
+#writeBtn{height:88px;border:2px solid var(--accent);border-radius:44px;background:var(--card);color:var(--accent);font-size:19px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15}
+#micBtn small,#writeBtn small{display:block;font-size:12px;font-weight:600;opacity:.85}
+#micBtn .mlbl{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15}
+.entry .etimebox{display:flex;flex-direction:column;align-items:center;gap:2px;flex:none}
+.etime{width:92px;font:inherit;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:5px 4px;text-align:center}
+.etimebox small{font-size:11px;color:var(--muted)}
+.timerow{display:flex;align-items:center;gap:10px}
+.timerow input{width:120px;font-weight:700;font-size:18px}
+.timerow span{font-size:13px;color:var(--muted)}
+.rcp{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:8px;display:grid;gap:6px}
+.rcphead{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);font-weight:600}
+.rcpDel{border:none;background:none;color:var(--rec);font-weight:600;min-height:32px}
+.pick{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:6px}
+.pick input{width:22px;height:22px;flex:none}
+.pick small{display:block;color:var(--muted)}
+.pick:has(input:checked){border-color:var(--accent);border-width:2px}
+.sheet label.pick{display:flex;align-items:center;gap:12px;color:var(--text);font-size:17px;margin:8px 0 0;min-height:56px;cursor:pointer}
+.sheet label.pick input{width:24px;height:24px;flex:none;margin:0;padding:0;accent-color:var(--accent)}
+.sheet label.pick b{color:var(--text)}
+.sheet .actions{position:sticky;bottom:calc(-16px - env(safe-area-inset-bottom));background:var(--bg);padding:6px 0 calc(10px + env(safe-area-inset-bottom));z-index:2}
+body.kb-open #dictText{min-height:72px}
+body.kb-open #dictText.short{min-height:56px}
+#dictText.short{min-height:90px;font-size:22px;font-weight:700;letter-spacing:.5px}
 
 /* Sheets */
-.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
-.sheet{background:var(--bg);width:100%;max-width:640px;max-height:92vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+.sheet-bg{position:fixed;inset:0;bottom:var(--kb,0px);background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:calc(var(--vvh,100vh) * .94);overflow-y:auto;border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
 .sheet h2{margin:0 0 12px;font-size:19px}
 .sheet label{display:block;font-size:14px;color:var(--muted);margin:12px 0 4px}
 .sheet input,.sheet textarea{width:100%;font:inherit;color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
@@ -88,37 +223,45 @@ main{flex:1;overflow-y:auto;padding:4px 16px 16px}
 .sheetmsg.info{border-color:var(--warn);color:var(--warn)}
 .linkbtn{display:flex;align-items:center;justify-content:center;width:100%;margin-top:14px;text-decoration:none}
 a.btn.primary{color:var(--accent-text)}
+.dictstate{padding:10px 12px;border-radius:10px;margin-bottom:4px;font-size:15px}
+.dictstate.rec{background:var(--rec);color:#fff}
+.dictstate.wait{background:var(--card);border:1px solid var(--warn);color:var(--warn)}
+#dictText{min-height:34vh}
+.recbig{width:100%;min-height:64px;margin-top:14px;font-size:19px;border:none;background:var(--rec);color:#fff;border-radius:32px}
+.btn.primary.recbig{background:var(--accent)}
 .orig{color:var(--muted);font-size:14px;white-space:pre-wrap;background:var(--card);border:1px dashed var(--line);border-radius:10px;padding:8px 10px}
 </style>
 </head>
 <body>
 
-<div id="splash">
-  <div class="logo-ph">Logo</div>
-  <h1>Störungslogger</h1>
-</div>
+<div id="splash"><img id="splashLogo" src="data:image/png;base64,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" width="297" height="87" alt="SFMdigital MO360"></div>
 
 <div id="app">
+  <div class="seg seg3 regs" role="tablist" aria-label="Register"><button id="regRoh" class="on" role="tab">Rohdaten</button><button id="regMit" role="tab">Mit Uhrzeit</button><button id="regOhne" role="tab">Ohne Uhrzeit</button></div>
   <header>
-    <button class="inc-switch" id="incBtn" aria-label="Störung wechseln">
-      <small>Aktuelle Störung ▾</small>
-      <b id="incTitle">Noch keine Störung</b>
+    <button class="inc-switch" id="incBtn" aria-label="Vorgang wechseln">
+      <small>Aktuelle Anlage ▾</small>
+      <b id="incTitle">Noch kein Vorgang</b>
     </button>
-    <button class="icon-btn" id="newIncBtn" aria-label="Neue Störung" title="Neue Störung">＋</button>
+    <button class="icon-btn" id="newIncBtn" aria-label="Neuer Vorgang" title="Neuer Vorgang">＋</button>
     <button class="icon-btn" id="settingsBtn" aria-label="Einstellungen" title="Einstellungen">⚙</button>
   </header>
+  <button id="anlageHead" aria-label="Anlage ändern"></button>
+  <button id="bereichBtn" class="bereich" hidden></button>
 
   <main id="entries"></main>
 
   <div id="status" class="hidden"></div>
 
   <div class="bottom">
-    <button class="btn" id="reportBtn">Bericht prüfen</button>
-    <button class="btn" id="mailBtn">Per E-Mail senden</button>
-    <button id="micBtn" aria-label="Diktieren">
-      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V22h2v-3.08A7 7 0 0 0 19 12h-2z"/></svg>
-      <span id="micLabel">Diktieren</span>
+   <div class="inputrow" id="inputRow">
+    <button id="writeBtn" class="inbtn" aria-label="Schritt schreiben"><svg class="bicon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg><span id="writeLabel">Schreiben</span></button>
+    <button id="micBtn" class="inbtn" aria-label="Schritt sprechen"><svg class="bicon" id="micIcon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 13c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm6.08-7.95c.84 1.18.84 2.71 0 3.89l1.68 1.69c2.02-2.02 2.02-5.07 0-7.27l-1.68 1.69zM20.07 2l-1.63 1.63c2.77 3.02 2.77 7.56 0 10.74L20.07 16c3.9-3.89 3.91-9.95 0-14z"/></svg><span id="micLabel">Sprechen</span></button>
+    <button id="sendBtn" hidden>
+      <svg id="mailIcon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
+      <span>E-Mail senden</span>
     </button>
+   </div>
   </div>
 </div>
 
@@ -148,6 +291,26 @@ const Store = {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) this.data = Object.assign(this.data, JSON.parse(raw));
     } catch (e) { this.storageOk = false; }
+    /* Ältere Daten übernehmen: fehlende Felder ergänzen, alter Textbericht bleibt als legacyReport erhalten */
+    if (!Array.isArray(this.data.settings.kuerzel))
+      this.data.settings.kuerzel = Anlagen.DEFAULTS.map(r => ({ k: r.k, terms: [...r.terms] }));
+    /* Empfänger: aus der bisherigen einzelnen Adresse übernehmen, nichts erfinden */
+    if (!Array.isArray(this.data.settings.recipients))
+      this.data.settings.recipients = [{ id: uid(), name: "", email: this.data.settings.email || "", self: true }];
+    this.data.incidents.forEach(i => {
+      /* Ereigniszeit je Eintrag (ältere Einträge: genannte Uhrzeit oder Erfassungszeit) */
+      (i.entries || []).forEach(e => {
+        if (!e.time) { const t = Korrektur.extractTime(e.text).time; e.time = t || fmtTime(new Date(e.createdAt)); e.timeSource = t ? "genannt" : "erfasst"; }
+      });
+      this.sortEntries(i);
+      if (!("anlage" in i)) i.anlage = null;
+      if (i.report && !i.report.items) { i.legacyReport = i.report; i.report = null; }
+      /* v6: Bericht wird laufend aus den Rohdaten erzeugt. Gespeicherte Entwürfe bleiben als legacyReport erhalten,
+         ein dort bereits eingetragener Bereich wird in den Vorgang übernommen (nicht erneut abfragen). */
+      if (i.report) { if (!i.bereich && i.report.heading && i.report.heading.bereich) i.bereich = i.report.heading.bereich;
+                      if (!i.view && i.report.view) i.view = i.report.view; i.legacyReport = i.report; i.report = null; }
+      if (!("bereich" in i)) i.bereich = "";
+    });
     try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
   },
   save() {
@@ -158,19 +321,45 @@ const Store = {
   newIncident() {
     const now = new Date();
     const inc = { id: uid(), title: "Störung " + fmtDate(now) + " " + fmtTime(now),
-                  createdAt: now.toISOString(), entries: [], report: null };
+                  createdAt: now.toISOString(), anlage: null, entries: [], report: null };
     this.data.incidents.unshift(inc);
     this.data.currentId = inc.id;
     this.save();
     return inc;
   },
-  /* capturedAt = Zeitpunkt, an dem die Aufnahme gestartet wurde. Wird nie überschrieben. */
-  addEntry(text, capturedAt, source) {
+  /* Ereigniszeitpunkt eines Eintrags: Datum der Erfassung + bearbeitbare Uhrzeit (e.time).
+     Liegt die Uhrzeit mehr als 12 h nach der Erfassung, war das Ereignis am Vortag (z. B. kurz nach Mitternacht erfasst). */
+  eventDate(e) {
+    const cap = new Date(e.createdAt), d = new Date(cap);
+    const [h, m] = String(e.time || fmtTime(cap)).split(":").map(Number);
+    d.setHours(h || 0, m || 0, 0, 0);
+    if (d - cap > 12 * 3600000) d.setDate(d.getDate() - 1);
+    return d;
+  },
+  /* Maßgebliche Reihenfolge: Ereigniszeit; bei gleicher Uhrzeit stabil nach Erfassungszeitpunkt */
+  compare(a, b) {
+    return (Store.eventDate(a) - Store.eventDate(b)) || a.createdAt.localeCompare(b.createdAt) || String(a.id).localeCompare(String(b.id));
+  },
+  sortEntries(inc) { if (inc && inc.entries) inc.entries.sort((a, b) => this.compare(a, b)); },
+  /* capturedAt = Erfassungszeitpunkt (unveränderlich). time = Ereigniszeit HH:MM (bearbeitbar). */
+  addEntry(text, capturedAt, source, originalText, time, timeSource) {
     const inc = this.current() || this.newIncident();
+    const orig = originalText || text;           // erkannter Rohtext bleibt getrennt erhalten
     inc.entries.push({ id: uid(), createdAt: capturedAt.toISOString(), source,
-                       originalText: text, text, editedAt: null });
-    inc.entries.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+                       time: time || fmtTime(capturedAt), timeSource: timeSource || "erfasst",
+                       originalText: orig, text, editedAt: orig !== text ? new Date().toISOString() : null });
+    this.sortEntries(inc);
     this.save();
+  },
+  /* Uhrzeit ändern: Liste neu sortieren und Uhrzeit im Bericht mitführen (Berichtstexte bleiben unverändert) */
+  setEntryTime(id, time, source) {
+    const inc = this.current(); const e = inc && inc.entries.find(x => x.id === id);
+    if (!e || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return false;
+    e.time = time; e.timeSource = source || "geändert";
+    this.sortEntries(inc);
+    ReportRules.syncTimes(inc);
+    this.save();
+    return true;
   },
   editEntry(id, text) {
     const e = this.current().entries.find(x => x.id === id);
@@ -185,55 +374,424 @@ const Store = {
   }
 };
 
-/* ---------------- 2. ReportRules ----------------
-   Erweiterungspunkte für später:
-   - GLOSSARY: Fachbegriffe/Kürzel normalisieren (z. B. "a s 11" -> "AS11")
-   - sections: Reihenfolge und Inhalt der Berichtsabschnitte
-   Regel für den Prototyp: nichts erfinden – nur erfasste Texte + Zeitstempel. */
-const ReportRules = {
-  GLOSSARY: [
-    // [/regex/gi, "Ersatz"]  – noch leer, wird mit realen Beispielen gefüllt
-  ],
-  normalize(text) {
-    let t = text.trim().replace(/\s+/g, " ");
-    for (const [re, rep] of this.GLOSSARY) t = t.replace(re, rep);
-    if (t && !/[.!?]$/.test(t)) t += ".";
-    return t.charAt(0).toUpperCase() + t.slice(1);
+/* ---------------- 2. Korrektur + Bericht ----------------
+   Korrektur: bringt Diktate in Schreibform. Bewusst regelbasiert und erweiterbar –
+   die endgültigen Regeln legen wir gemeinsam fest (hier ergänzen, nicht im UI).
+   Grundsatz: Aussage nie verändern, nichts erfinden, Originaltext bleibt im Eintrag. */
+const Korrektur = {
+  /* Anlagenkennung: genau 2 Buchstaben + 2 Ziffern, einheitlich z. B. "SA11".
+     Erkennt auch Sprachvarianten wie "SA 11", "S A 11", "s.a.-11". */
+  KENNUNG_RE: /(?:^|[^A-Za-zÄÖÜäöüß])([A-Za-z])[.\s-]{0,2}([A-Za-z])\.?[\s-]{0,2}(\d)\s?(\d)(?!\d)/,
+  KENNUNG_FMT: /^[A-Z]{2}\d{2}$/,
+  parseKennung(text) {
+    if (!text) return null;
+    const t = String(text).trim();
+    const strict = t.toUpperCase().replace(/[\s.\-]/g, "");
+    if (this.KENNUNG_FMT.test(strict)) return strict;
+    // zuerst großgeschriebene Paare (so liefert die Spracherkennung Kürzel), dann beliebige
+    const upper = new RegExp(this.KENNUNG_RE.source.replace(/\[A-Za-z\]/g, "[A-Z]"));
+    const m = upper.exec(t) || this.KENNUNG_RE.exec(t);
+    return m ? (m[1] + m[2]).toUpperCase() + m[3] + m[4] : null;
   },
-  sections: [
-    (inc) => ["STÖRBERICHT – ENTWURF", "=".repeat(22), "", "Störung: " + inc.title],
-    (inc) => {
-      const e = inc.entries;
-      const first = new Date(e[0].createdAt), last = new Date(e[e.length - 1].createdAt);
-      const out = ["Datum: " + fmtDate(first, true),
-                   "Erster Eintrag: " + fmtTime(first) + " Uhr",
-                   "Letzter Eintrag: " + fmtTime(last) + " Uhr"];
-      const mins = Math.round((last - first) / 60000);
-      if (e.length > 1) out.push("Dokumentierter Zeitraum: " + fmtDuration(mins) +
-                                 " (zwischen erstem und letztem Eintrag, keine Ausfallzeit)");
-      return out;
-    },
-    (inc) => ["", "Ablauf:"].concat(inc.entries.map(e =>
-      fmtTime(new Date(e.createdAt)) + " Uhr – " + ReportRules.normalize(e.text))),
-    (inc) => ["", "---", "Erstellt aus " + inc.entries.length + " erfassten Einträgen. Bitte vor dem Versand prüfen."]
+
+  /* Ausdrücklich genannte Uhrzeit finden (hat Vorrang vor dem Erfassungszeitpunkt).
+     Liefert { time: "HH:MM" | null, rest: Text ohne die Zeitangabe }. */
+  TIME_PATTERNS: [
+    /(?:\b(?:um|gegen|ab)\s+)?\b([01]?\d|2[0-3])[:.]([0-5]\d)\s*uhr\b/i,   // 14:32 Uhr / 14.32 Uhr
+    /\b(?:um|gegen|ab)\s+([01]?\d|2[0-3])[:.]([0-5]\d)\b/i,               // um 14.32
+    /\b([01]?\d|2[0-3]):([0-5]\d)\b/,                                     // 14:32
+    /(?:\b(?:um|gegen|ab)\s+)?\b([01]?\d|2[0-3])\s*uhr(?:\s+([0-5]?\d)(?![\d:.]))?\b/i   // 14 Uhr 32 / 9 Uhr
   ],
+  extractTime(text) {
+    for (const re of this.TIME_PATTERNS) {
+      const m = re.exec(text);
+      if (!m) continue;
+      const time = pad(+m[1]) + ":" + pad(+(m[2] || 0));
+      let rest = (text.slice(0, m.index) + " " + text.slice(m.index + m[0].length));
+      rest = rest.replace(/\s+([,.;:])/g, "$1").replace(/^[\s,;:–-]+/, "").replace(/\s{2,}/g, " ").trim();
+      return { time, rest };
+    }
+    return { time: null, rest: text };
+  },
+
+  /* Schreibweisen für Fachbegriffe/Kürzel – wird mit realen Beispielen erweitert. */
+  GLOSSARY: [
+    [/\bi\.?\s?o\.?(?=[\s,.;]|$)/gi, "i. O."],
+    [/\bn\.?\s?i\.?\s?o\.?(?=[\s,.;]|$)/gi, "n. i. O."],
+    [/\bham\s?(\d{3})\b/gi, "HAM $1"],
+    [/\bsps\b/gi, "SPS"],
+    [/\bnot\s?aus\b/gi, "Not-Aus"],
+    [/\blampen\s?test\b/gi, "Lampentest"]
+  ],
+  FILLER: /^(?:(?:also|ähm|äh|ehm|ja|okay|ok)[,\s]+)+/i,
+
+  correct(text) {
+    let t = String(text || "").replace(/\s+/g, " ").trim();
+    t = t.replace(this.FILLER, "");
+    // Anlagenkennungen im Text einheitlich schreiben (SA 11 -> SA11)
+    t = t.replace(/(^|[^A-Za-zÄÖÜäöüß])([A-Z])[.\s-]{0,2}([A-Z])\.?[\s-]{0,2}(\d)\s?(\d)(?!\d)/g, "$1$2$3$4$5");
+    for (const [re, rep] of this.GLOSSARY) t = t.replace(re, rep);
+    t = t.replace(/\s+([,.;:!?])/g, "$1").replace(/([,;])(?=\S)/g, "$1 ");
+    if (t) t = t.charAt(0).toUpperCase() + t.slice(1);
+    if (t && !/[.!?]$/.test(t)) t += ".";
+    return t;
+  },
+
+  /* Hook für eine spätere KI-Korrektur (z. B. über einen eigenen Server). Absichtlich leer. */
+  ai: null
+};
+
+/* Bericht: strukturierte Daten; beide Ansichten (mit/ohne Uhrzeiten) werden daraus nur dargestellt. */
+const ReportRules = {
+  /* Stichwörter für den Betreff. prio 1 = Ursache/Befund, prio 2 = Symptom.
+     Es werden höchstens zwei Begriffe genommen, Ursachen vor Symptomen. */
+  KEYWORDS: [
+    { re: /schalterdefekt|schalter\S*\s+(?:ist\s+|war\s+)?(?:defekt|kaputt)|defekte[nr]?\s+schalter/i, kw: "Schalterdefekt", prio: 1 },
+    { re: /wackler|wackelkontakt|wackel/i, kw: "Wackler", prio: 1 },
+    { re: /nicht\s+programmiert|programmierfehler|falsch\s+programmiert|programmierung\s+fehlt/i, kw: "Programmierfehler", prio: 1 },
+    { re: /kurzschluss/i, kw: "Kurzschluss", prio: 1 },
+    { re: /kabelbruch|kabel\s+(?:defekt|gebrochen|beschädigt)/i, kw: "Kabelbruch", prio: 1 },
+    { re: /sicherung|schutzschalter|ls-?schalter/i, kw: "Sicherung ausgelöst", prio: 1 },
+    { re: /stecker|steckverbind/i, kw: "Steckverbindung", prio: 1 },
+    { re: /(?:sensor|initiator|lichtschranke)\S*\s+(?:defekt|verstellt|verschmutzt)/i, kw: "Sensorfehler", prio: 1 },
+    { re: /druckluft|leckage|undicht/i, kw: "Druckluftleck", prio: 1 },
+    { re: /(?:profinet|profibus|bus|kommunikation)\S*\s*(?:fehler|störung|ausfall)/i, kw: "Kommunikationsfehler", prio: 1 },
+    { re: /(?:glühbirne|leuchtmittel|lampe|leuchtmelder)\S*.{0,40}(?:defekt|kaputt|funktioniert nicht|reagier\w* nicht|aus)/i, kw: "Leuchtmelder ohne Funktion", prio: 2 },
+    { re: /motor\S*.{0,30}(?:defekt|blockiert|läuft nicht)/i, kw: "Motorstörung", prio: 2 },
+    { re: /not-?aus/i, kw: "Not-Aus", prio: 2 },
+    { re: /ausfall|ausgefallen|stillstand/i, kw: "Ausfall", prio: 2 }
+  ],
+  /* Die (höchstens zwei) wichtigsten Stichwörter – Ursachen vor Symptomen */
+  keywords(texts) {
+    const all = texts.join(" \n ");
+    const hits = [];
+    this.KEYWORDS.forEach((k, order) => { const m = k.re.exec(all); if (m) hits.push({ ...k, pos: m.index, order }); });
+    hits.sort((a, b) => a.prio - b.prio || a.pos - b.pos);
+    return hits.slice(0, 2).map(h => h.kw);
+  },
+  subject(code, texts) {
+    const all = texts.join(" \n ");
+    const hits = [];
+    this.KEYWORDS.forEach((k, order) => { const m = k.re.exec(all); if (m) hits.push({ ...k, pos: m.index, order }); });
+    hits.sort((a, b) => a.prio - b.prio || a.pos - b.pos);
+    let words = hits.slice(0, 2).map(h => h.kw);
+    if (!words.length && texts[0]) words = [texts[0].replace(/[.!?]$/, "").split(" ").slice(0, 4).join(" ")];
+    return (code || "Anlage ?") + (words.length ? ", " + words.join(" plus ") : "");
+  },
+
+  /* Einträge -> Berichtsposten. Uhrzeit = bearbeitbare Ereigniszeit des Eintrags,
+     Reihenfolge = dieselbe chronologische Sortierung wie in der Eintragsliste. */
+  items(inc) {
+    return [...inc.entries].sort((a, b) => Store.compare(a, b)).map(e => {
+      const { time, rest } = Korrektur.extractTime(e.text);
+      // genannte Uhrzeit nur aus dem Satz nehmen, wenn sie der Ereigniszeit entspricht (steht dann davor)
+      const text = Korrektur.correct(time && time === e.time ? (rest || e.text) : e.text);
+      return { entryId: e.id, time: e.time, timeSource: e.timeSource || "erfasst", text };
+    });
+  },
+  /* Störzeit = erste bis letzte dokumentierte Ereigniszeit (chronologisch) */
+  spanTimes(inc) {
+    const sorted = [...inc.entries].sort((a, b) => Store.compare(a, b));
+    return { beginn: fmtTime(Store.eventDate(sorted[0])), ende: fmtTime(Store.eventDate(sorted[sorted.length - 1])) };
+  },
+  /* Ausfall in ganzen Minuten; Ende vor Beginn = über Mitternacht */
+  minutes(beginn, ende) {
+    const p = t => { const m = /^(\d{2}):(\d{2})$/.exec(t || ""); return m ? +m[1] * 60 + +m[2] : null; };
+    const a = p(beginn), b = p(ende);
+    if (a === null || b === null) return null;
+    return (b - a + 1440) % 1440;
+  },
+  /* Bereich in der Überschrift: Großbuchstaben, keine Bindestriche/Leerzeichen (z. B. MRA2) */
+  normBereich(v) { return String(v || "").toUpperCase().replace(/[^A-Z0-9ÄÖÜ]/g, ""); },
+  stichwort(inc) {
+    const kws = this.keywords(this.items(inc).map(i => i.text));
+    return kws.length ? kws.join(" und ") : "Störung";
+  },
+  heading(inc) {
+    return Object.assign({ bereich: Store.data.settings.lastBereich || "", stichwort: this.stichwort(inc) }, this.spanTimes(inc));
+  },
+  /* ---- v6: Bericht laufend aus den Rohdaten ----
+     Titel:   Bereich Anlage Störungsbezeichnung – Ausfall N Minuten   (fehlende Teile entfallen, nichts wird erfunden)
+     Zeile 2: Störzeit Beginn bis Ende = Ausfall N Minuten              (erst ab zwei Einträgen; bei einem Eintrag nur „ab“) */
+  /* ---- Berichtsaufbau (verbindlich) ----
+       [Bereich] [Anlage] [Problem/Arbeit] Ausfall: [N] min
+       Störzeit: [Beginn] - [Ende]
+       IH vor Ort: [Uhrzeit]            (nur wenn im Text erwähnt)
+       (Leerzeile)
+       Störungsverlauf                  (mit Uhrzeit zeilenweise, ohne Uhrzeit fortlaufend)
+     Alles wird bei jeder Anzeige aus den Rohdaten berechnet; fehlende Teile entfallen, nichts wird erfunden. */
+  IH_RE: /(?:\b(?:um|gegen|ab)\s+)?(?:\b\d{1,2}[:.]\d{2}\s*(?:uhr\b)?\s*)?\b(?:IH|Instandhaltung|Instandhalter(?:in)?)\b(?:\s+(?!vor\b)[\wäöüÄÖÜß:.]+){0,4}?\s+vor\s*ort\b(?:\s*(?:um|ab|gegen|seit)?\s*\d{1,2}[:.]\d{2}(?:\s*uhr\b)?)?/i,
+  /* Zeitpunkt „IH vor Ort“: im Satz genannte Uhrzeit, sonst Ereigniszeit des Schritts (erste Erwähnung) */
+  ihTime(inc) {
+    const sorted = [...inc.entries].sort((a, b) => Store.compare(a, b));
+    for (const e of sorted) {
+      const m = this.IH_RE.exec(e.text);
+      if (!m) continue;
+      const t = /(\d{1,2})[:.](\d{2})/.exec(m[0]);
+      return t ? normTime(t[1] + ":" + t[2]) || e.time : e.time;
+    }
+    return "";
+  },
+  /* Störungsverlauf: Schritte ohne die „IH vor Ort“-Angabe (die steht im Kopf); reine IH-Schritte entfallen */
+  verlauf(items) {
+    return items.map(i => {
+      const rest = this.bare(i.text.replace(this.IH_RE, " ").replace(/\s+([,.;:])/g, "$1").replace(/^[\s,.;:–-]+|[\s,;:–-]+$/g, "").replace(/\s{2,}/g, " "));
+      return rest ? Object.assign({}, i, { text: rest.charAt(0).toUpperCase() + rest.slice(1) }) : null;
+    }).filter(Boolean);
+  },
+  /* Problem/Arbeit für den Titel: zuerst die dokumentierte Arbeit („Schalter getauscht“),
+     sonst der dokumentierte Defekt („Schalter defekt“). Wörtlich aus dem Text, höchstens zwei, chronologisch. */
+  ACTION_WORDS: "ausgetauscht|getauscht|ersetzt|erneuert|repariert|instandgesetzt|neu gesteckt|nachgezogen|festgezogen|neu programmiert|programmiert|korrigiert|neu eingestellt|eingestellt|justiert|gereinigt|neu gestartet|zurückgesetzt|behoben",
+  actions(texts) {
+    const N = "([A-ZÄÖÜ][a-zäöüß]+(?:[- ](?:[A-Z]{0,3}\\d+[A-Za-z]?))?)";
+    const re = new RegExp(N + "\\s+(?:wurde\\s+|wird\\s+|ist\\s+)?(?:" + "neu\\s+|wieder\\s+)?(" + this.ACTION_WORDS + ")\\b");
+    const out = [];
+    for (const t of texts) {
+      const m = re.exec(t);
+      if (!m || /^(Problem|Fehler|Störung|Ursache)$/.test(m[1])) continue;
+      const v = m[1] + " " + m[2];
+      if (!out.some(x => x.toLowerCase() === v.toLowerCase())) out.push(v);
+      if (out.length === 2) break;
+    }
+    return out;
+  },
+  live(inc) {
+    const items = inc && inc.entries.length ? this.items(inc) : [];
+    const span = items.length >= 2 ? this.spanTimes(inc) : null;
+    const min = span ? this.minutes(span.beginn, span.ende) : null;
+    const verlauf = this.verlauf(items);
+    const texts = verlauf.map(i => i.text);
+    const acts = this.actions(texts);
+    const problemAuto = (acts.length ? acts : this.defects(texts)).join(" und ");
+    const problem = inc && typeof inc.problem === "string" ? inc.problem : problemAuto;   // von Hand korrigiert hat Vorrang
+    const parts = [inc && inc.bereich, inc && inc.anlage && inc.anlage.code, problem].filter(Boolean);
+    if (min !== null) parts.push("Ausfall: " + min + " min");
+    const title = parts.join(" ");                                   // nur Leerzeichen, keine Striche
+    const zeit = span ? "Störzeit: " + span.beginn + " - " + span.ende
+               : items.length === 1 ? "Störzeit: ab " + items[0].time : "";
+    const ihT = inc && inc.entries.length ? this.ihTime(inc) : "";
+    const ih = ihT ? "IH vor Ort: " + ihT : "";
+    return { items, verlauf, span, min, title, zeit, ih, head: [title, zeit, ih].filter(Boolean), problem, problemAuto };
+  },
+  /* Fortlaufender Störungsverlauf: „Problem gesucht, Schalter getauscht“ */
+  paragraphLive(verlauf) { return verlauf.map(i => this.bare(i.text)).filter(Boolean).join(", "); },
+  renderLive(inc, withTimes) {
+    const L = this.live(inc);
+    const body = withTimes ? L.verlauf.map(i => i.time + " – " + this.bare(i.text))
+                           : [this.paragraphLive(L.verlauf)].filter(Boolean);
+    return L.head.concat([""], body).join("\n");
+  },
+  subjectLive(inc) {
+    const t = this.live(inc).title;
+    return t || "Störungsbericht " + fmtDate(new Date(inc.createdAt), true);
+  },
+  /* Defektbeschreibung aus den Störungsschritten übernehmen (chronologisch, höchstens zwei verschiedene):
+       „Schalter defekt festgestellt“ / „Der Schalter S3 ist defekt“ -> „Schalter defekt“ / „Schalter S3 defekt“
+       „defekter Schalter“ -> „Schalter defekt“,  „Schalterdefekt“ -> „Schalter defekt“
+       „Lampe kaputt“, „Netzteil ausgefallen“, „Taster funktioniert nicht“ werden wörtlich übernommen.
+     Steht im Text kein Defekt, bleibt die Beschreibung leer – es wird nichts abgeleitet oder erfunden. */
+  DEFECT_WORDS: "defekt|kaputt|ausgefallen|gebrochen|beschädigt|verschlissen|durchgebrannt|funktioniert nicht|reagiert nicht",
+  defects(texts) {
+    const N = "([A-ZÄÖÜ][a-zäöüß]+(?:[- ](?:[A-Z]{0,3}\\d+[A-Za-z]?))?)";
+    const W = this.DEFECT_WORDS;
+    const pats = [
+      [new RegExp(N + "\\s+(?:ist\\s+|war\\s+|sind\\s+|waren\\s+)?(" + W + ")\\b"), m => m[1] + " " + m[2]],
+      [new RegExp("\\b(?:[Dd]efekte[rns]?|[Kk]aputte[rns]?)\\s+" + N), m => m[1] + " defekt"],
+      [/\b([A-ZÄÖÜ][a-zäöüß]{2,})defekt\b/, m => m[1] + " defekt"]
+    ];
+    const out = [];
+    for (const t of texts) {
+      let best = null;
+      for (const [re, f] of pats) { const m = re.exec(t); if (m && (!best || m.index < best.i)) best = { i: m.index, v: f(m) }; }
+      if (best && !out.some(x => x.toLowerCase() === best.v.toLowerCase())) out.push(best.v);
+      if (out.length === 2) break;
+    }
+    return out;
+  },
+  /* Ältere Berichtsentwürfe (v4) erhalten die neue Überschrift, Berichtstexte bleiben */
+  ensureHeading(inc) {
+    const r = inc.report; if (!r || !r.items || r.heading || !inc.entries.length) return;
+    r.heading = this.heading(inc); r.headingEdited = {};
+  },
+
   build(inc) {
-    if (!inc || !inc.entries.length) return "";
-    return this.sections.flatMap(fn => fn(inc)).join("\n");
+    const items = this.items(inc);
+    const code = inc.anlage ? inc.anlage.code : "";
+    return {
+      version: 2,
+      generatedAt: new Date().toISOString(),
+      subject: this.subject(code, items.map(i => i.text)),
+      view: "mit",
+      heading: this.heading(inc),
+      headingEdited: {},
+      tab: "mit",
+      items,
+      editedAt: null,
+      handedToMailAt: null
+    };
+  },
+
+  /* Uhrzeiten aus den Einträgen in den Bericht übernehmen und neu ordnen, ohne Berichtstexte zu verlieren.
+     Kopfzeiten werden nachgeführt, sofern sie nicht von Hand geändert wurden. */
+  syncTimes(inc) {
+    const r = inc.report; if (!r || !r.items || !inc.entries.length) return;
+    const pos = new Map(inc.entries.map((e, n) => [e.id, n]));
+    r.items.forEach(it => { const e = inc.entries.find(x => x.id === it.entryId); if (e) { it.time = e.time; it.timeSource = e.timeSource; } });
+    r.items.sort((a, b) => (pos.has(a.entryId) ? pos.get(a.entryId) : 1e9) - (pos.has(b.entryId) ? pos.get(b.entryId) : 1e9));
+    this.ensureHeading(inc);
+    const h = this.spanTimes(inc), ed = r.headingEdited || {};
+    ["beginn", "ende"].forEach(k => { if (!ed[k]) r.heading[k] = h[k]; });
+  },
+
+  /* Kopf (Bereich, Stichwort: Minuten, Störzeit) ist in beiden Ansichten identisch und behält seine Zeiten:
+       MRA2
+       Wackler und Ausfall: 120
+       Störzeit 14:43 bis 15:02 = Ausfall 19 Minuten
+       (Leerzeile)
+     Mit Uhrzeiten: eine Zeile je Eintrag „14:43 – Text“. Ohne Uhrzeiten: fortlaufender Text in gleicher Reihenfolge. */
+  headLines(report) {
+    const h = report.heading, min = this.minutes(h.beginn, h.ende);
+    const m = min === null ? "?" : String(min);
+    return [h.bereich, (h.stichwort || "Störung") + ": " + m, "Störzeit " + (h.beginn || "?") + " bis " + (h.ende || "?") + " = Ausfall " + m + " Minuten"].filter(Boolean);
+  },
+  bare(t) { return String(t || "").trim().replace(/[\s.,;:!?]+$/, ""); },
+  paragraph(report) {
+    const parts = report.items.map(i => this.bare(i.text)).filter(Boolean);
+    return parts.length ? parts.join(", ") + "." : "";
+  },
+  render(report, withTimes) {
+    const body = withTimes ? report.items.filter(i => i.text.trim()).map(i => i.time + " – " + this.bare(i.text))
+                           : [this.paragraph(report)];
+    return this.headLines(report).concat([""], body).join("\n");
+  },
+
+  /* Wurden Details nach der Berichtserstellung ergänzt oder geändert? */
+  outdated(inc) {
+    const r = inc.report; if (!r || !r.items) return false;
+    const ids = new Set(r.items.map(i => i.entryId));
+    return inc.entries.length !== r.items.length || inc.entries.some(e => !ids.has(e.id) || (e.editedAt || e.createdAt) > r.generatedAt);
+  }
+};
+
+/* ---------------- Anlagenkürzel ----------------
+   Format: 3 Ziffern (vordere Nr.) + 3 Zeichen (Kürzel) + 3 Ziffern (hintere Nr.), z. B. 030RB_100.
+   Gesprochene Begriffe werden über die Zuordnungstabelle aus den Einstellungen in Kürzel übersetzt.
+   Bewusst einfach: Ist ein Begriff mehrdeutig oder als „bestätigen“ (?) markiert, entscheidet der Nutzer. */
+const Anlagen = {
+  FORMAT: /^\d{3}[A-Z0-9_]{3}\d{3}$/,
+  LEGACY: /^[A-Z]{2}\d{2}$/,                        // bisherige Kurzform (z. B. SA11) bleibt gültig
+  DEFAULTS: [
+    { k: "RB_", terms: ["Roboter"] },
+    { k: "GST", terms: ["Geostation", "Geo", "Station?"] }   // „?“ = Zuordnung jedes Mal bestätigen
+  ],
+  NUMWORDS: { null: 0, eins: 1, ein: 1, eine: 1, zwei: 2, drei: 3, vier: 4, fünf: 5, sechs: 6, sieben: 7, acht: 8, neun: 9, zehn: 10, elf: 11, zwölf: 12 },
+
+  table() {
+    const t = Store.data.settings.kuerzel;
+    return Array.isArray(t) ? t : this.DEFAULTS;
+  },
+  isValid(code) { return this.FORMAT.test(code) || this.LEGACY.test(code); },
+  pad3(n) { return String(n).padStart(3, "0"); },
+
+  /* Bereits fertiges Kürzel? (getippt oder gesprochen als „030 RB 100“) */
+  direct(text, tbl) {
+    const s = String(text).toUpperCase().replace(/[\s.\-]/g, "");
+    if (this.FORMAT.test(s)) return s;
+    if (this.LEGACY.test(s)) return s;
+    // gesprochen „030 RB 100“: Unterstrich wird nicht mitgesprochen -> bekanntes Kürzel suchen
+    const m = /^(\d{1,3})\s*([A-Za-z0-9_]{2,3})\s*(\d{1,3})$/.exec(String(text).trim());
+    if (m) {
+      const mid = m[2].toUpperCase();
+      const known = (tbl || this.table()).map(r => r.k).find(k => k === mid || k.replace(/_/g, "") === mid);
+      if (known) return this.pad3(m[1]) + known + this.pad3(m[3]);
+    }
+    return null;
+  },
+
+  /* Gesprochene Bezeichnung -> Ergebnis
+     { code, kuerzel, term, confirm, choices:[{k,term}], note, error } */
+  resolve(text, tbl) {
+    const T = tbl || this.table();
+    const raw = String(text || "").trim();
+    if (!raw) return { error: "Keine Bezeichnung erkannt." };
+    const d = this.direct(raw, T);
+    if (d) return { code: d, note: "Kürzel direkt übernommen" };
+
+    // Begriffe suchen (längste zuerst, damit „Geostation“ vor „Station“ greift)
+    const lower = raw.toLowerCase().replace(/-/g, " ");
+    const entries = [];
+    T.forEach(row => row.terms.forEach(t0 => {
+      const confirm = /\?\s*$/.test(t0); const term = t0.replace(/\?\s*$/, "").trim();
+      if (term) entries.push({ k: row.k, term, confirm });
+    }));
+    entries.sort((a, b) => b.term.length - a.term.length);
+    // Begriff darf mit Leerzeichen zwischen den Buchstaben erkannt werden („Geo Station“ = „Geostation“)
+    const escape = s => [...s.toLowerCase().replace(/\s+/g, "")].map(c => c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("[\\s-]?");
+    let hit = null;
+    for (const e of entries) {
+      const m = new RegExp("(?:^|[^a-zäöüß])(" + escape(e.term) + ")(?![a-zäöüß])", "i").exec(lower);
+      if (m) { hit = { ...e, pos: m.index + m[0].length - m[1].length, len: m[1].length }; break; }
+    }
+    // Zahlen: bevorzugt hinter dem Begriff, sonst irgendwo im Text
+    const nums = s => (s.match(/\b(\d{1,3})\b|\b(null|eins?|eine|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|elf|zwölf)\b/gi) || [])
+      .map(x => /^\d+$/.test(x) ? +x : this.NUMWORDS[x.toLowerCase()]);
+    let n = hit && hit.pos >= 0 ? nums(lower.slice(hit.pos + hit.len)) : [];
+    if (!n.length) n = nums(lower);
+    const tooLong = /\d{4,}/.test(lower);
+
+    if (!hit) {
+      const legacy = Korrektur.parseKennung(raw);
+      if (legacy) return { code: legacy, note: "bisherige Kurzform" };
+      return { error: "Kein bekannter Anlagenbegriff gefunden. Kürzel in den Einstellungen ergänzen oder direkt eingeben, z. B. 030RB_100." };
+    }
+    if (tooLong) return { error: "Nummer mit mehr als drei Stellen erkannt – bitte korrigieren (vordere und hintere Nummer je höchstens drei Stellen)." };
+    if (!n.length) return { error: "Für „" + hit.term + "“ fehlt die vordere Nummer, z. B. „" + hit.term + " 30“." };
+
+    // Mehrdeutig: derselbe Begriff ist mehreren Kürzeln zugeordnet
+    const same = entries.filter(e => e.term.toLowerCase() === hit.term.toLowerCase());
+    const choices = [...new Set(same.map(e => e.k))];
+    const front = this.pad3(n[0]), back = n.length > 1 ? this.pad3(n[1]) : "001";
+    const build = k => front + k + back;
+    const res = { code: build(hit.k), kuerzel: hit.k, term: hit.term, front, back, backDefault: n.length < 2,
+                  confirm: hit.confirm || choices.length > 1 };
+    if (choices.length > 1) res.choices = choices.map(k => ({ k, code: build(k) }));
+    return res;
+  },
+
+  /* Anlage aus einem Störungsschritt erkennen – nur wenn eindeutig (keine Vermutungen) */
+  detect(text) {
+    const t = String(text || "");
+    const full = /(?:^|[^0-9A-Za-z])(\d{3}[A-Z0-9_]{3}\d{3})(?![0-9A-Za-z])/.exec(t);
+    if (full) return full[1];
+    const legacy = /(?:^|[^A-Za-zÄÖÜäöüß])([A-Z])[.\s-]?([A-Z])\s?(\d)(\d)(?!\d)/.exec(t);
+    if (legacy) return legacy[1] + legacy[2] + legacy[3] + legacy[4];
+    const r = this.resolve(t);
+    if (!r.error && r.term && !r.confirm && !r.choices) return r.code;
+    return null;
+  },
+  /* Text für die Rückmeldung im Diktierfenster */
+  explain(r) {
+    if (r.error) return r.error;
+    if (!r.term) return "Erkannt: <b>" + esc(r.code) + "</b> (" + esc(r.note || "") + ")";
+    return "Erkannt: <b>" + esc(r.code) + "</b> – „" + esc(r.term) + "“ → " + esc(r.kuerzel) + ", vordere Nr. " + r.front +
+           ", hintere Nr. " + r.back + (r.backDefault ? " (Standard, keine genannt)" : "");
   }
 };
 
 /* ---------------- 3. Speech ----------------
-   Ablauf eines Diktats:
-   1. Umgebung prüfen (API vorhanden, HTTPS, nicht gesperrt)
-   2. Mikrofonberechtigung VORHER klären (Chrome-Dialog läuft ohne Zeitlimit)
-   3. Erkennung starten; Watchdog nur für den Start der Erkennung selbst
-   4. Android: Einzeläußerung (continuous=false) – Text wird nach Sprechpause übernommen
-   Fehler werden mit Code protokolliert (Diagnose in den Einstellungen) und nie dauerhaft gesperrt. */
+   Diktierphase ("Session") vs. Erkennungsdurchlauf ("Run"):
+   - Eine Session beginnt mit „Diktieren“ und endet NUR durch „Aufnahme erledigt“
+     (oder einen echten Fehler / App geht in den Hintergrund).
+   - Android beendet einen Erkennungsdurchlauf nach kurzen Pausen selbst. Dann wird
+     der Text des Durchlaufs genau einmal übernommen und automatisch ein neuer
+     Durchlauf gestartet. So gehen Pausen und Nachdenken nicht verloren.
+   - Der gesammelte Text steht laufend im Eingabefeld und wird als Entwurf gesichert. */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const isAndroid = /Android/i.test(navigator.userAgent);
 const DIAG_KEY = "stoerungslogger.diag";
+const DRAFT_KEY = "stoerungslogger.draft";
 const START_TIMEOUT_MS = 8000;
+const MAX_QUICK_FAILS = 5;            // so oft hintereinander sofortiges Ende ohne Text -> Fehler
 const ENV_MSG = {
   unsupported: "Dieser Browser hat keine Spracherkennung. Bitte die Seite in Google Chrome öffnen.",
   insecure: "Spracherkennung braucht eine sichere Verbindung (https://). Diese Seite ist nicht sicher geladen.",
@@ -249,21 +807,36 @@ const ERR_MSG = {
   "language-not-supported": "Deutsch wird von der Spracherkennung auf diesem Gerät nicht unterstützt.",
   "start-failed": "Die Spracherkennung konnte nicht gestartet werden.",
   "start-timeout": "Die Spracherkennung hat innerhalb von 8 Sekunden nicht gestartet.",
-  "no-result": "Aufnahme beendet, aber kein Text erkannt – es wurde nichts gespeichert."
+  "restart-loop": "Die Spracherkennung beendet sich ständig sofort wieder.",
+  "no-result": "Aufnahme beendet, aber kein Text erkannt."
 };
-/* Bei diesen Fehlern ist direktes Diktieren gerade nicht nutzbar -> Tastatur-Eingabe anbieten */
-const FALLBACK_ERRORS = ["not-allowed", "service-not-allowed", "audio-capture", "network", "language-not-supported", "start-failed", "start-timeout"];
+/* Echte Fehler: Diktierphase beenden (bisheriger Text bleibt erhalten). Alles andere -> automatisch weiter. */
+const FATAL_ERRORS = ["not-allowed", "service-not-allowed", "audio-capture", "network", "language-not-supported", "start-failed", "start-timeout"];
+/* Fehler vor Beginn der Diktierphase -> Tastatur-Eingabe anbieten */
+const FALLBACK_ERRORS = FATAL_ERRORS;
 
 const Speech = {
   supported: !!SR,
-  rec: null, active: false, done: true, startedAt: null, finals: [], interim: "", error: null, errorDetail: "",
-  startTimer: null, stopTimer: null, t0: 0, log: [], lastError: null, lastSuccess: null,
+  session: null, run: null, rec: null, preparing: false,
+  startTimer: null, stopTimer: null, restartTimer: null,
+  t0: 0, log: [], lastError: null, lastSuccess: null, errorDetail: "",
 
+  /* ---- Diagnose ---- */
   loadDiag() { try { const d = JSON.parse(localStorage.getItem(DIAG_KEY) || "{}"); this.lastError = d.lastError || null; this.lastSuccess = d.lastSuccess || null; this.log = d.log || []; } catch (e) {} },
   saveDiag() { try { localStorage.setItem(DIAG_KEY, JSON.stringify({ lastError: this.lastError, lastSuccess: this.lastSuccess, log: this.log })); } catch (e) {} },
-  note(ev) { this.log.push(((performance.now() - this.t0) / 1000).toFixed(1) + " s " + ev); if (this.log.length > 30) this.log.shift(); },
+  note(ev) { this.log.push(((performance.now() - this.t0) / 1000).toFixed(1) + " s " + ev); if (this.log.length > 40) this.log.shift(); },
+  recordError(code, detail) { this.lastError = { code, detail: detail || "", at: new Date().toISOString() }; this.saveDiag(); },
+  errMsg(code) { return (ERR_MSG[code] || "Spracherkennung meldet einen Fehler.") + " (Code: " + code + ")"; },
 
-  /* Prüft vor dem Start, ob Diktieren hier überhaupt möglich ist (unabänderliche Gründe). */
+  /* ---- Entwurf (übersteht versehentliches Schließen/Neuladen) ---- */
+  saveDraft() {
+    const s = this.session; if (!s) return;
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ startedAt: s.startedAt.toISOString(), text: this.fullText(), incidentId: Store.data.currentId, purpose: this.purpose })); } catch (e) {}
+  },
+  loadDraft() { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch (e) { return null; } },
+  clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch (e) {} },
+
+  /* ---- Voraussetzungen ---- */
   envProblem() {
     if (!SR) return "unsupported";
     if (!window.isSecureContext) return "insecure";
@@ -273,18 +846,16 @@ const Speech = {
     } catch (e) {}
     return null;
   },
-
   async micPermissionState() {
     try { return (await navigator.permissions.query({ name: "microphone" })).state; } catch (e) { return "unbekannt"; }
   },
-
   /* Klärt die Mikrofonberechtigung, bevor die Erkennung startet. Liefert "ok" oder einen Fehlercode. */
   async ensureMic() {
     const state = await this.micPermissionState();
     this.note("Berechtigung: " + state);
     if (state === "granted") return "ok";
     if (state === "denied") return "not-allowed";
-    if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return "ok"; // Erkennung fragt selbst
+    if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return "ok";
     UI.status("Bitte den Mikrofonzugriff im Chrome-Dialog <b>erlauben</b> …", "info", true);
     try {
       const s = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -299,33 +870,61 @@ const Speech = {
     }
   },
 
-  async start() {
-    if (this.rec && !this.done) {               // erneutes Tippen während des Starts = abbrechen
-      this.error = "aborted"; try { this.rec.abort(); } catch (e) {} this.finish(); return;
-    }
-    if (this.preparing) return;                 // Berechtigungsdialog läuft bereits
+  /* ---- Start durch „Diktieren“ ---- */
+  purpose: null,                                // "anlage" oder "detail"
+  async start(purpose) {
+    if (this.preparing || (this.session && !this.session.ended)) return;
+    this.purpose = purpose || "detail";
     const problem = this.envProblem();
     if (problem) { UI.status(ENV_MSG[problem], "err", true); UI.openManualEntry(ENV_MSG[problem]); return; }
-
     this.t0 = performance.now(); this.log = []; this.errorDetail = "";
-    this.startedAt = new Date();                // Erfassungszeitpunkt = Antippen
+    const startedAt = new Date();                // Erfassungszeitpunkt = Antippen
     this.note("Diktieren angetippt (" + (isAndroid ? "Android" : "kein Android") + ")");
     this.preparing = true;
     const perm = await this.ensureMic();
     this.preparing = false;
-    if (perm !== "ok") { this.done = false; this.error = perm; this.finish(); return; }
+    if (perm !== "ok") {
+      this.recordError(perm, this.errorDetail);
+      const msg = this.errMsg(perm);
+      UI.status(msg, "err", true); UI.openManualEntry(msg, startedAt);
+      return;
+    }
+    UI.status("", "hidden");
+    this.beginSession(startedAt, "");
+  },
 
-    this.finals = []; this.interim = ""; this.error = null; this.done = false;
+  beginSession(startedAt, base) {
+    this.session = { startedAt, base, segments: [], ended: false, userStop: false, quickFails: 0, restarts: 0 };
+    UI.openDictation(startedAt, false, this.purpose);
+    UI.recording(true);
+    this.startRun();
+  },
+
+  /* „Weiter diktieren“ nach dem Beenden: Text im Feld bleibt Grundlage, Zeitstempel bleibt. */
+  resume(startedAt, base) {
+    if (this.preparing || (this.session && !this.session.ended)) return;
+    this.note("Weiter diktieren");
+    this.session = { startedAt, base, segments: [], ended: false, userStop: false, quickFails: 0, restarts: 0 };
+    UI.dictMode("rec");
+    UI.recording(true);
+    this.startRun();
+  },
+
+  /* ---- Ein Erkennungsdurchlauf ---- */
+  startRun() {
+    const s = this.session; if (!s || s.ended) return;
     let r;
-    try { r = new SR(); } catch (e) { this.errorDetail = e.name || String(e); this.error = "start-failed"; this.finish(); return; }
+    try { r = new SR(); } catch (e) { this.endSession("start-failed", e.name || String(e)); return; }
     r.lang = "de-DE";
-    r.continuous = !isAndroid;                  // Android: Einzeläußerung ist zuverlässiger
+    r.continuous = !isAndroid;                  // Android: Einzeläußerung pro Durchlauf, Neustart übernimmt die App
     r.interimResults = true; r.maxAlternatives = 1;
+    const run = { finals: [], interim: "", started: false, done: false, error: null, errorDetail: "", t: performance.now() };
+    this.run = run; this.rec = r;
     const started = (ev) => {
       this.note(ev);
-      clearTimeout(this.startTimer);
-      if (this.done || this.active) return;
-      this.active = true; UI.recording(true);
+      if (this.rec !== r || run.started) return;
+      run.started = true; clearTimeout(this.startTimer);
+      UI.dictState("listening");
     };
     r.onstart = () => started("start");
     r.onaudiostart = () => started("audiostart");
@@ -334,35 +933,129 @@ const Speech = {
     r.onspeechend = () => this.note("speechend");
     r.onnomatch = () => this.note("nomatch");
     r.onresult = (ev) => {
+      if (this.rec !== r) return;
       let interim = "";
       for (let i = ev.resultIndex; i < ev.results.length; i++) {
         const t = ev.results[i][0].transcript.trim();
         if (!t) continue;
-        if (ev.results[i].isFinal) this.addFinal(t, i); else interim = t;
+        if (ev.results[i].isFinal) this.addFinal(run, t, i); else interim = t;
       }
-      this.interim = interim;
+      run.interim = interim;
       this.note("result" + (interim ? " (vorläufig)" : " (fertig)"));
-      UI.liveText(this.text() + (interim ? " " + interim : ""));
+      UI.dictText(this.fullText());
+      this.saveDraft();
     };
-    r.onerror = (ev) => { this.note("error: " + ev.error + (ev.message ? " – " + ev.message : "")); if (!this.error) { this.error = ev.error; this.errorDetail = ev.message || ""; } };
-    r.onend = () => { this.note("end"); this.finish(); };
-    this.rec = r;
+    r.onerror = (ev) => {
+      this.note("error: " + ev.error + (ev.message ? " – " + ev.message : ""));
+      if (this.rec !== r) return;
+      if (!run.error) { run.error = ev.error; run.errorDetail = ev.message || ""; }
+    };
+    r.onend = () => { this.note("end"); if (this.rec === r) this.runEnded(run); };
     this.startTimer = setTimeout(() => {
-      if (this.active || this.done) return;
+      if (run.started || this.rec !== r) return;
       this.note("Watchdog: kein Start nach " + START_TIMEOUT_MS / 1000 + " s");
-      this.error = "start-timeout"; try { r.abort(); } catch (e) {} this.finish();
+      run.error = "start-timeout"; try { r.abort(); } catch (e) {}
+      this.runEnded(run);
     }, START_TIMEOUT_MS);
-    try { r.start(); this.note("start() aufgerufen"); UI.status("Spracherkennung wird gestartet … (erneut tippen zum Abbrechen)", "info", true); }
-    catch (e) { this.note("start() Ausnahme: " + (e.name || e)); this.errorDetail = e.name || String(e); this.error = "start-failed"; this.finish(); }
+    try { r.start(); this.note("start() aufgerufen" + (s.restarts ? " (Neustart " + s.restarts + ")" : "")); UI.dictState(s.restarts ? "restarting" : "starting"); }
+    catch (e) { this.note("start() Ausnahme: " + (e.name || e)); run.error = "start-failed"; run.errorDetail = e.name || String(e); this.runEnded(run); }
   },
-  /* Android-Chrome liefert teils kumulierte Ergebnisse.
-     Gleiche Ergebnis-Indizes werden ersetzt, wiederholter Text nicht doppelt übernommen. */
-  addFinal(t, idx) {
-    const prev = this.finals[this.finals.length - 1];
-    if (prev && (prev.idx === idx || (isAndroid && t.toLowerCase().startsWith(prev.t.toLowerCase())))) prev.t = t, prev.idx = idx;
-    else if (!prev || prev.t.toLowerCase() !== t.toLowerCase()) this.finals.push({ t, idx });
+
+  /* Android liefert teils kumulierte Ergebnisse: gleicher Index wird ersetzt, Wiederholung nicht doppelt übernommen. */
+  addFinal(run, t, idx) {
+    const prev = run.finals[run.finals.length - 1];
+    if (prev && (prev.idx === idx || (isAndroid && t.toLowerCase().startsWith(prev.t.toLowerCase())))) { prev.t = t; prev.idx = idx; }
+    else if (!prev || prev.t.toLowerCase() !== t.toLowerCase()) run.finals.push({ t, idx });
   },
-  text() { return this.finals.map(f => f.t).join(" ").trim(); },
+  runText(run, withInterim) {
+    const f = run.finals.map(x => x.t).join(" ").trim();
+    if (withInterim) return (f + " " + (run.interim || "")).trim();
+    return f || (run.interim || "").trim();      // ohne endgültiges Ergebnis: letzte Zwischenerkennung retten
+  },
+  fullText() {
+    const s = this.session; if (!s) return "";
+    const live = this.run && !this.run.done ? this.runText(this.run, true) : "";
+    return [s.base, ...s.segments, live].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+  },
+
+  /* Ende eines Durchlaufs: Text genau einmal übernehmen, dann neu starten oder Session beenden. */
+  runEnded(run) {
+    if (run.done) return;
+    run.done = true;
+    clearTimeout(this.startTimer); clearTimeout(this.stopTimer);
+    this.rec = null;
+    const s = this.session;
+    const seg = this.runText(run, false);
+    if (seg) {
+      const last = s.segments[s.segments.length - 1];
+      if (!last || last.toLowerCase() !== seg.toLowerCase()) s.segments.push(seg);
+      s.quickFails = 0;
+    }
+    this.run = null;
+    UI.dictText(this.fullText());
+    this.saveDraft();
+    if (s.ended) return;
+    if (s.userStop) { this.endSession(null); return; }
+    if (run.error && FATAL_ERRORS.includes(run.error)) { this.endSession(run.error, run.errorDetail); return; }
+    // Normales Ende nach Pause, "no-speech", "aborted", "nomatch": weiter aufnehmen
+    // Stille ("no-speech") ist normal und zählt nie als Fehlschlag; nur sofortiges Ende ohne Text
+    if (!seg && run.error !== "no-speech" && performance.now() - run.t < 1500) s.quickFails++;
+    if (s.quickFails >= MAX_QUICK_FAILS) { this.endSession("restart-loop"); return; }
+    s.restarts++;
+    UI.dictState("restarting");
+    this.restartTimer = setTimeout(() => this.startRun(), seg ? 80 : 250);
+  },
+
+  /* „Aufnahme erledigt“ – einzige normale Art, die Diktierphase zu beenden. */
+  finishByUser() {
+    const s = this.session; if (!s || s.ended || s.userStop) return;
+    s.userStop = true;
+    this.note("Aufnahme erledigt angetippt");
+    clearTimeout(this.restartTimer);
+    UI.dictState("finishing");
+    if (this.rec && this.run) {
+      const run = this.run;
+      try { this.rec.stop(); } catch (e) {}      // letzter Text des Durchlaufs kommt noch an
+      this.stopTimer = setTimeout(() => { this.note("kein end-Ereignis nach Stopp"); try { this.rec && this.rec.abort(); } catch (e) {} this.runEnded(run); }, 3000);
+    } else this.endSession(null);
+  },
+
+  /* Verwerfen während der Aufnahme */
+  cancel() {
+    const s = this.session; if (!s || s.ended) return;
+    s.userStop = true; s.ended = true;
+    this.note("Diktat verworfen");
+    clearTimeout(this.restartTimer); clearTimeout(this.startTimer); clearTimeout(this.stopTimer);
+    if (this.rec) { const r = this.rec; this.rec = null; try { r.abort(); } catch (e) {} }
+    this.run = null;
+    UI.recording(false);
+    this.saveDiag();
+  },
+
+  /* App geht in den Hintergrund (Bildschirm aus, App-Wechsel): sauber beenden, Text bleibt im Feld. */
+  pauseForBackground() {
+    const s = this.session; if (!s || s.ended || s.userStop) return;
+    this.note("App im Hintergrund – Aufnahme beendet");
+    s.background = true;
+    this.finishByUser();
+  },
+
+  endSession(err, detail) {
+    const s = this.session; if (!s || s.ended) return;
+    s.ended = true;
+    clearTimeout(this.restartTimer); clearTimeout(this.startTimer); clearTimeout(this.stopTimer);
+    if (this.rec) { const r = this.rec; this.rec = null; try { r.abort(); } catch (e) {} }
+    if (this.run) { const run = this.run; run.done = true; const seg = this.runText(run, false); if (seg) s.segments.push(seg); this.run = null; }
+    UI.recording(false);
+    const text = this.fullText();
+    let msg = null, kind = null;
+    if (err) { this.recordError(err, detail); msg = this.errMsg(err) + (text ? " Der bisher erkannte Text ist erhalten." : "") + " Du kannst den Text unten auch per Tastatur-Mikrofon ergänzen."; kind = "err"; }
+    else if (!text) { this.recordError("no-result", ""); msg = this.errMsg("no-result") + " Du kannst „Weiter diktieren“ oder das Tastatur-Mikrofon nutzen."; kind = "info"; }
+    else { this.lastSuccess = new Date().toISOString(); this.saveDiag(); if (s.background) { msg = "Aufnahme beendet, weil die App in den Hintergrund ging. Der Text ist erhalten."; kind = "info"; } }
+    this.saveDraft();
+    UI.dictReview(text, msg, kind);
+  },
+
   diagnose() {
     const yes = b => b ? "ja ✓" : "NEIN ✗";
     let embedded = false; try { embedded = window.self !== window.top; } catch (e) { embedded = true; }
@@ -373,38 +1066,10 @@ const Speech = {
       "\nEingebettete Ansicht: " + (embedded ? "ja (Mikrofon meist gesperrt)" : "nein ✓") +
       "\nMikrofon für diese Seite gesperrt: " + (p === "policy" ? "JA ✗" : "nein ✓") +
       '\nMikrofon-Berechtigung: <span id="permState">wird geprüft …</span>' +
-      "\nModus: " + (isAndroid ? "Android – Einzeläußerung" : "Dauererkennung") +
+      "\nModus: " + (isAndroid ? "Android – Einzeläußerungen mit automatischem Neustart" : "Dauererkennung mit automatischem Neustart") +
       "\nLetzter Erfolg: " + (this.lastSuccess ? when(this.lastSuccess) : "–") +
       "\nLetzter Fehler: " + (this.lastError ? esc(this.lastError.code + (this.lastError.detail ? " (" + this.lastError.detail + ")" : "")) + ", " + when(this.lastError.at) : "–") +
       (this.log.length ? "\n\nAblauf letzter Versuch:\n" + esc(this.log.join("\n")) : "");
-  },
-  stop() {
-    if (!(this.rec && this.active)) return;
-    this.note("Stopp angetippt");
-    UI.status("Erkennung wird abgeschlossen …", "info");
-    try { this.rec.stop(); } catch (e) {}
-    this.stopTimer = setTimeout(() => { this.note("kein end-Ereignis nach Stopp"); this.finish(); }, 4000);
-  },
-  finish() {
-    if (this.done) return;                      // nur einmal abschließen
-    this.done = true; this.active = false;
-    clearTimeout(this.startTimer); clearTimeout(this.stopTimer);
-    UI.recording(false);
-    let text = this.text();
-    if (!text && this.interim && this.error !== "not-allowed") text = this.interim.trim(); // letzte Zwischenerkennung retten
-    if (text) {
-      Store.addEntry(text, this.startedAt, "sprache");
-      this.lastSuccess = new Date().toISOString(); this.saveDiag();
-      UI.render();
-      UI.status("✓ Text erkannt und gespeichert (" + fmtTime(this.startedAt) + " Uhr).", "ok");
-      return;
-    }
-    const code = this.error || "no-result";
-    this.lastError = { code, detail: this.errorDetail || "", at: new Date().toISOString() };
-    this.saveDiag();
-    const msg = (ERR_MSG[code] || ("Spracherkennung meldet einen Fehler.")) + " (Code: " + code + ")";
-    UI.status(msg, "err", true);
-    if (FALLBACK_ERRORS.includes(code)) UI.openManualEntry(msg, this.startedAt);
   }
 };
 Speech.loadDiag();
@@ -416,40 +1081,155 @@ function fmtDate(d, year) { return pad(d.getDate()) + "." + pad(d.getMonth() + 1
 function fmtDuration(m) { return m < 60 ? m + " min" : Math.floor(m / 60) + " h " + pad(m % 60) + " min"; }
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 const $ = id => document.getElementById(id);
+const TIMEATTR = 'type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" autocomplete="off"';
+const HEADICON = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 13c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm6.08-7.95c.84 1.18.84 2.71 0 3.89l1.68 1.69c2.02-2.02 2.02-5.07 0-7.27l-1.68 1.69zM20.07 2l-1.63 1.63c2.77 3.02 2.77 7.56 0 10.74L20.07 16c3.9-3.89 3.91-9.95 0-14z"/></svg>';
+/* "1443" / "14.43" / "9:5" / "9" -> "14:43" / "09:05" / "09:00"; ungültig -> "" */
+function normTime(v) {
+  const t = String(v || "").trim().replace(/\s*uhr$/i, "");
+  let m = /^(\d{1,2})[:.,](\d{1,2})$/.exec(t) || /^(\d{1,2})(\d{2})$/.exec(t) || /^(\d{1,2})$/.exec(t);
+  if (!m) return "";
+  const h = +m[1], mi = +(m[2] || 0);
+  return h < 24 && mi < 60 ? pad(h) + ":" + pad(mi) : "";
+}
 
 /* ---------------- 4. UI ---------------- */
+const PURPOSE = {
+  anlage: { title: "Anlage nennen", review: "Anlage prüfen", save: "Anlage übernehmen",
+            hint: "Bezeichnung sprechen, z. B. „Roboter 30 100“ oder „Geostation 30“. Danach auf „Aufnahme erledigt“ tippen." },
+  detail: { title: "Störungsdetail", review: "Detail prüfen", save: "Detail speichern",
+            hint: "Sprechpausen sind kein Problem – die Aufnahme läuft weiter, bis du auf „Aufnahme erledigt“ tippst." }
+};
 const UI = {
   statusTimer: null,
+  register: "roh",
+
+  /* ---- Hauptansicht: Register Rohdaten | Mit Uhrzeiten | Ohne Uhrzeiten ---- */
   render() {
     const inc = Store.current();
-    $("incTitle").textContent = inc ? inc.title : "Noch keine Störung";
+    const reg = inc ? (inc.register || "roh") : this.register;
+    $("incTitle").textContent = inc ? this.incLabel(inc) : "Noch kein Vorgang";
+    const head = $("anlageHead");
+    if (inc && inc.anlage) { head.innerHTML = '<span id="anlageCode">' + esc(inc.anlage.code) + '</span><span class="edit" aria-hidden="true">✎</span>'; head.classList.remove("empty-head"); }
+    else { head.textContent = "Anlage noch nicht genannt"; head.classList.add("empty-head"); }
+    const bb = $("bereichBtn");
+    bb.hidden = !inc;
+    if (inc) bb.innerHTML = inc.bereich ? 'Bereich <b id="bereichCode">' + esc(inc.bereich) + '</b> ✎' : "＋ Bereich ergänzen (optional)";
+    ["roh", "mit", "ohne"].forEach(r => $("reg" + r.charAt(0).toUpperCase() + r.slice(1)).classList.toggle("on", reg === r));
+    if (reg === "roh") this.renderEntries(inc); else this.renderLive(inc, reg === "mit");
+    this.renderBottom(inc, reg);
+  },
+  incLabel(inc) {
+    const d = new Date(inc.createdAt);
+    return (inc.anlage ? inc.anlage.code : "Neuer Vorgang") + " · " + fmtDate(d) + " " + fmtTime(d) + " · " + inc.entries.length + (inc.entries.length === 1 ? " Eintrag" : " Einträge");
+  },
+  recentCodes() {
+    const seen = [];
+    Store.data.incidents.forEach(i => { if (i.anlage && !seen.includes(i.anlage.code)) seen.push(i.anlage.code); });
+    return seen.slice(0, 6);
+  },
+  renderEntries(inc) {
+    const box = $("entries");
+    const L = ReportRules.live(inc);
+    let html = '<div class="titlecard"><div class="tlabel">Titel</div>' +
+      '<div class="trow"><input id="tBereich" value="' + esc(inc ? inc.bereich || "" : "") + '" placeholder="Bereich" aria-label="Bereich" autocomplete="off">' +
+      '<input id="tAnlage" value="' + esc(inc && inc.anlage ? inc.anlage.code : "") + '" placeholder="Anlage" aria-label="Anlagenkürzel" autocomplete="off">' +
+      '<button class="tmic" id="tAnlageMic" aria-label="Anlage sprechen">' + HEADICON + '</button></div>' +
+      '<div class="tprob"><input id="tProblem" value="' + esc(L.problem || "") + '" placeholder="Problem / Fehler" aria-label="Problem oder Arbeit" autocomplete="off">' +
+      (inc && typeof inc.problem === "string" ? '<button class="tauto" id="tProblemAuto">↺ automatisch</button>' : '<span class="tauto">automatisch</span>') + '</div>' +
+      '<div class="tout" id="tTitle">' + esc(L.title || "–") + '</div>' +
+      (L.zeit ? '<div class="tzeit" id="tZeit">' + esc(L.zeit) + '</div>' : "") +
+      (L.ih ? '<div class="tzeit" id="tIH">' + esc(L.ih) + '</div>' : "") +
+      '</div>';
+    if (!inc || !inc.anlage) {
+      const recent = this.recentCodes();
+      if (recent.length) html += '<div class="hint">Zuletzt genutzte Anlagen:</div><div class="chips">' +
+        recent.map(c => '<button class="chip" data-code="' + esc(c) + '">' + esc(c) + '</button>').join("") + '</div>';
+    }
+    html += '<div class="steplbl">Störungsschritte</div>';
+    if (inc && inc.entries.length) {
+      html += inc.entries.map(e => {
+        const meta = [e.source === "manuell" ? "geschrieben" : "gesprochen",
+                      e.editedAt ? "Text bearbeitet " + fmtTime(new Date(e.editedAt)) + " Uhr" : ""]
+                     .filter(Boolean).join(" · ");
+        return '<div class="entry"><div class="etimebox"><input ' + TIMEATTR + ' class="etime" data-id="' + e.id + '" value="' + esc(e.time) + '" aria-label="Uhrzeit des Ereignisses">' +
+               '<small>' + esc(e.timeSource || "erfasst") + '</small></div><div class="body">' + esc(e.text) +
+               (meta ? '<div class="meta">' + meta + '</div>' : "") +
+               '</div><button class="more" data-id="' + e.id + '" aria-label="Eintrag bearbeiten">⋯</button></div>';
+      }).join("");
+    } else {
+      html += '<div class="empty">Noch keine Schritte erfasst.<br>Unten <b>Sprechen</b> oder <b>Schreiben</b> – der Bericht entsteht automatisch.</div>';
+    }
+    box.innerHTML = html;
+    this.wireTitle();
+  },
+  /* Titelzeile: Bereich, Anlage und Problem direkt bearbeiten; Berichte folgen automatisch */
+  wireTitle() {
+    const refresh = () => {
+      const inc = Store.current(), L = ReportRules.live(inc);
+      $("tTitle").textContent = L.title || "–";
+      $("incTitle").textContent = inc ? this.incLabel(inc) : "Noch kein Vorgang";
+    };
+    const need = () => Store.current() || Store.newIncident();
+    $("tBereich").oninput = () => {
+      const v = ReportRules.normBereich($("tBereich").value);
+      if (v !== $("tBereich").value) $("tBereich").value = v;
+      need().bereich = v; Store.save(); refresh();
+    };
+    $("tProblem").oninput = () => { need().problem = $("tProblem").value.replace(/\s*-\s*/g, " ").replace(/\s{2,}/g, " "); Store.save(); refresh(); };
+    if ($("tProblemAuto")) $("tProblemAuto").onclick = () => { const inc = need(); delete inc.problem; Store.save(); this.render(); };
+    $("tAnlage").onchange = () => {
+      const raw = $("tAnlage").value.trim(), inc = need();
+      if (!raw) { inc.anlage = null; Store.save(); this.render(); return; }
+      const r = Anlagen.resolve(raw);
+      if (r.error) { this.status(esc(r.error), "err", true); return; }
+      if (r.choices && !Anlagen.direct(raw)) { this.status("Mehrdeutig – bitte das Kürzel direkt eintragen: " + r.choices.map(c => esc(c.code)).join(" oder "), "err", true); return; }
+      inc.anlage = { code: r.code, raw, at: new Date().toISOString() }; Store.save(); this.render();
+      this.status("✓ Anlage " + esc(r.code) + " übernommen.", "ok");
+    };
+    $("tAnlageMic").onclick = () => Speech.start("anlage");
+  },
+  /* Berichtsansicht: wird bei jedem Anzeigen neu aus den Rohdaten berechnet */
+  renderLive(inc, withTimes) {
     const box = $("entries");
     if (!inc || !inc.entries.length) {
-      box.innerHTML = '<div class="empty">Noch keine Einträge.<br>Unten auf <b>Diktieren</b> tippen und sprechen.<br>' +
-        (inc ? "" : "Eine neue Störung wird automatisch angelegt.") + "</div>";
+      box.innerHTML = '<div class="empty">Noch keine Schritte erfasst.<br>Unten <b>Sprechen</b> oder <b>Schreiben</b> – der Bericht entsteht automatisch.</div>';
       return;
     }
-    box.innerHTML = inc.entries.map(e => {
-      const d = new Date(e.createdAt);
-      const meta = e.editedAt ? '<div class="meta">bearbeitet ' + fmtTime(new Date(e.editedAt)) + " Uhr</div>" :
-                   (e.source === "manuell" ? '<div class="meta">manuell erfasst</div>' : "");
-      return '<div class="entry"><time>' + fmtTime(d) + '</time><div class="body">' + esc(e.text) + meta +
-             '</div><button class="more" data-id="' + e.id + '" aria-label="Eintrag bearbeiten">⋯</button></div>';
-    }).join("");
-    box.scrollTop = box.scrollHeight;
+    const L = ReportRules.live(inc);
+    box.innerHTML = '<div class="repview">' +
+      '<div class="rtitle" id="repTitle">' + esc(L.title || "–") + '</div>' +
+      (L.zeit || L.ih ? '<div class="rzeit">' + (L.zeit ? '<div id="repZeit">' + esc(L.zeit) + '</div>' : "") + (L.ih ? '<div id="repIH">' + esc(L.ih) + '</div>' : "") + '</div>' : "") +
+      (withTimes
+        ? '<div id="repLines">' + L.verlauf.map(i => '<div class="rline"><b>' + esc(i.time) + '</b> – ' + esc(ReportRules.bare(i.text)) + '</div>').join("") + '</div>'
+        : '<div class="para" id="paraText">' + esc(ReportRules.paragraphLive(L.verlauf)) + '</div>') +
+      '</div>' +
+      (inc.handedToMailAt ? '<div class="note">Zuletzt an die Mail-App übergeben am ' + fmtDate(new Date(inc.handedToMailAt), true) + " " + fmtTime(new Date(inc.handedToMailAt)) + ' Uhr. Ob gesendet wurde, zeigt nur deine Mail-App.</div>' : "") +
+      '<p class="hint">Wird laufend aus den Rohdaten erstellt. Korrekturen vorne unter „Rohdaten“.</p>';
   },
+  renderBottom(inc, reg) {
+    const report = reg !== "roh";
+    $("inputRow").classList.toggle("report", report);
+    $("sendBtn").hidden = !report;
+    // Schreiben/Sprechen erfassen immer Störungsschritte – die Anlage steht in der Titelzeile (keine Pflichtabfrage)
+    $("micBtn").dataset.act = "detail"; $("writeBtn").dataset.act = "detail";
+  },
+  bottomAction() { const act = $("micBtn").dataset.act; if (act === "detail" || act === "anlage") return Speech.start(act); },
+  setRegister(reg) {
+    const inc = Store.current();
+    this.register = reg;
+    if (inc) { inc.register = reg; if (reg !== "roh") inc.view = reg; Store.save(); }
+    this.render(); $("entries").scrollTop = 0;
+  },
+  autosize(t) { t.style.height = "auto"; t.style.height = (t.scrollHeight + 2) + "px"; },
+
   status(msg, kind, keep) {
     const s = $("status");
     clearTimeout(this.statusTimer);
     s.className = kind || ""; s.innerHTML = msg;
     if (!keep && kind !== "rec" && kind !== "info") this.statusTimer = setTimeout(() => s.classList.add("hidden"), 6000);
   },
-  recording(on) {
-    $("micBtn").classList.toggle("rec", on);
-    $("micLabel").textContent = on ? "Stopp – Text übernehmen" : "Diktieren";
-    if (on) this.status('<span class="dot"></span><b>AUFNAHME LÄUFT</b> – jetzt sprechen<span class="live" id="live">…</span>', "rec");
-  },
-  liveText(t) { const l = $("live"); if (l) l.textContent = t || "…"; },
+  recording(on) { $("micBtn").classList.toggle("rec", on); },
+  liveText() {},
 
   ask(msg, yesLabel, onYes) {
     this.openSheet('<h2>Bitte bestätigen</h2><p>' + esc(msg) + '</p><div class="row"><button class="btn" data-act="close">Abbrechen</button>' +
@@ -457,90 +1237,240 @@ const UI = {
     $("askYes").onclick = () => { this.closeSheet(); onYes(); };
   },
   openSheet(html) { $("sheet").innerHTML = html; $("sheetBg").classList.remove("hidden"); },
-  closeSheet() { $("sheetBg").classList.add("hidden"); $("sheet").innerHTML = ""; },
+  closeSheet() { this.sheetLocked = false; $("sheetBg").classList.add("hidden"); $("sheet").innerHTML = ""; },
 
-  openManualEntry(reason, capturedAt) {
-    const at = capturedAt || new Date();
-    this.openSheet('<h2>Eintrag erfassen</h2>' + (reason ? '<div class="note">' + esc(reason) + '</div>' : "") +
-      '<p class="hint">Tipp: Auf das Mikrofon-Symbol der Handy-Tastatur (z. B. Gboard) tippen und diktieren.</p>' +
-      '<label>Zeitstempel: ' + fmtTime(at) + ' Uhr (Zeitpunkt des Tippens auf „Diktieren“)</label>' +
-      '<textarea id="manualText" autofocus></textarea>' +
-      '<div class="row"><button class="btn" data-act="close">Abbrechen</button><button class="btn primary" id="manualSave">Speichern</button></div>');
-    setTimeout(() => $("manualText").focus(), 50);
-    $("manualSave").onclick = () => {
-      const t = $("manualText").value.trim();
-      if (!t) return;
-      Store.addEntry(t, at, "manuell"); this.closeSheet(); this.render();
-      this.status("✓ Eintrag gespeichert (" + fmtTime(at) + " Uhr).", "ok");
+  /* ---- Diktierfenster (Anlage oder Detail): Aufnahme läuft -> „Aufnahme erledigt“ -> prüfen -> speichern ---- */
+  dict: null,   // { startedAt, recognized, purpose }
+  openDictation(startedAt, recovered, purpose) {
+    purpose = purpose || "detail";
+    const P = PURPOSE[purpose];
+    this.dict = { startedAt, recognized: "", purpose, timeSource: "erfasst", source: "sprache" };
+    this.sheetLocked = true;                    // kein versehentliches Schließen durch Tippen daneben
+    this.openSheet('<h2 id="dictTitle">' + P.title + '</h2>' +
+      '<div id="dictState" class="dictstate"></div>' +
+      (purpose === "detail" ? '<label for="dictTime">Uhrzeit des Ereignisses</label><div class="timerow"><input type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" autocomplete="off" id="dictTime" value="' + fmtTime(startedAt) + '"><span id="dictTimeSrc">Erfassungszeit – bei Bedarf ändern</span></div><label for="dictText">Text</label>' : '<label>Anlagenkennung (z. B. 030RB_100)</label>') +
+      '<textarea id="dictText" readonly placeholder="Bitte sprechen – der erkannte Text erscheint hier laufend …"' + (purpose === "anlage" ? ' class="short"' : "") + '></textarea>' +
+      '<div id="dictRecBtns" class="actions">' +
+        '<button class="btn recbig" id="dictDone">■ Aufnahme erledigt</button>' +
+        '<p class="hint">' + P.hint + '</p>' +
+        '<div class="row"><button class="btn danger" id="dictCancel">Verwerfen</button></div>' +
+      '</div>' +
+      '<div id="dictEditBtns" class="actions" hidden>' +
+        '<p class="hint">Text prüfen und bei Bedarf ändern – besonders Fachbegriffe und Kürzel. Ergänzen geht auch mit dem Mikrofon der Tastatur.</p>' +
+        '<button class="btn primary recbig" id="dictSave">' + P.save + '</button>' +
+        '<div class="row"><button class="btn" id="dictMore">Weiter diktieren</button><button class="btn danger" id="dictDiscard">Verwerfen</button></div>' +
+      '</div>');
+    $("dictDone").onclick = () => Speech.finishByUser();
+    if ($("dictTime")) $("dictTime").oninput = () => { this.dict.timeSource = "geändert"; $("dictTimeSrc").textContent = "von Hand geändert"; };
+    this.armDiscard($("dictCancel"), () => { Speech.cancel(); Speech.clearDraft(); this.closeSheet(); this.status("Diktat verworfen.", "info"); });
+    this.armDiscard($("dictDiscard"), () => { Speech.clearDraft(); this.closeSheet(); this.status("Diktat verworfen.", "info"); });
+    $("dictMore").onclick = () => Speech.resume(this.dict.startedAt, $("dictText").value.trim());
+    $("dictSave").onclick = () => this.saveDictation();
+    if (!recovered) this.dictMode("rec");
+  },
+  saveDictation() {
+    const t = $("dictText").value.trim();
+    if (!t) { this.sheetMsg("Das Feld ist leer – nichts zu speichern.", "err"); return; }
+    const d = this.dict;
+    if (d.purpose === "anlage") {
+      const r = Anlagen.resolve(t);
+      if (r.error) { this.sheetMsg(esc(r.error), "err"); return; }
+      if (r.choices && !Anlagen.direct(t)) { this.showAnlageResult(t); return; }
+      Speech.clearDraft(); this.closeSheet();
+      this.setAnlage(r.code, d.recognized || t);
+      return;
+    }
+    // Ereigniszeit: von Hand geändert > im Text genannt > Erfassungszeit
+    let time = $("dictTime") ? normTime($("dictTime").value) : fmtTime(d.startedAt), src = d.timeSource;
+    const said = Korrektur.extractTime(t).time;
+    if (src !== "geändert" && said) { time = said; src = "genannt"; }
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) { this.sheetMsg("Bitte eine gültige Uhrzeit eintragen.", "err"); return; }
+    Store.addEntry(t, d.startedAt, d.source, d.source === "manuell" ? t : (d.recognized || t), time, src);
+    // Anlage aus dem Text übernehmen, wenn noch keine eingetragen ist (keine Pflichtabfrage)
+    let found = "";
+    const cur = Store.current();
+    if (cur && !cur.anlage) { const c = Anlagen.detect(t); if (c) { cur.anlage = { code: c, raw: t, at: new Date().toISOString(), auto: true }; Store.save(); found = " Anlage " + c + " aus dem Text übernommen (im Titel änderbar)."; } }
+    Speech.clearDraft();
+    this.closeSheet(); this.render();
+    this.status("✓ Schritt gespeichert (" + time + " Uhr) und chronologisch einsortiert." + found, "ok");
+  },
+  /* Verwerfen braucht zwei Tipps (kein Systemdialog – funktioniert überall). */
+  armDiscard(btn, action) {
+    let armed = false, timer = null;
+    btn.onclick = () => {
+      if (armed) { clearTimeout(timer); action(); return; }
+      armed = true; btn.textContent = "Wirklich verwerfen? Nochmal tippen";
+      timer = setTimeout(() => { armed = false; btn.textContent = "Verwerfen"; }, 4000);
     };
+  },
+  dictMode(mode) {
+    if (!$("dictText")) return;
+    const rec = mode === "rec", P = PURPOSE[this.dict.purpose];
+    $("dictRecBtns").hidden = !rec; $("dictEditBtns").hidden = rec;
+    $("dictText").readOnly = rec;
+    $("dictTitle").textContent = rec ? P.title : P.review;
+    $("dictState").hidden = !rec;
+    const m = $("sheetMsg"); if (m && rec) m.remove();
+    if (rec) this.dictState("starting");
+  },
+  dictState(state) {
+    const el = $("dictState"); if (!el) return;
+    el.className = "dictstate " + (state === "finishing" ? "wait" : "rec");
+    el.innerHTML = {
+      starting: '<span class="dot"></span><b>AUFNAHME STARTET</b> – Mikrofon wird eingeschaltet …',
+      listening: '<span class="dot"></span><b>AUFNAHME LÄUFT</b> – ich höre zu',
+      restarting: '<span class="dot"></span><b>AUFNAHME LÄUFT</b> – Mikrofon wird nach der Pause neu verbunden …',
+      finishing: '<b>Wird abgeschlossen …</b> letzter Text wird übernommen'
+    }[state] || "";
+  },
+  dictText(t) {
+    const ta = $("dictText"); if (!ta || !ta.readOnly) return;
+    ta.value = t; ta.scrollTop = ta.scrollHeight;
+  },
+  dictReview(text, msg, kind) {
+    if (!$("dictText")) this.openDictation(Speech.session ? Speech.session.startedAt : new Date(), true, Speech.purpose);
+    this.dict.recognized = text;
+    const ta = $("dictText");
+    ta.readOnly = false; ta.value = text;
+    this.dictMode("edit");
+    if (this.dict.purpose === "anlage" && text && !msg) { this.showAnlageResult(text); return; }
+    this.applySaidTime(text);
+    if (msg) this.sheetMsg(msg, kind);
+  },
+  /* Im Diktat genannte Uhrzeit ins Zeitfeld übernehmen (Vorrang vor der Erfassungszeit, nicht vor Handänderung) */
+  applySaidTime(text) {
+    const f = $("dictTime"); if (!f || this.dict.timeSource === "geändert") return;
+    const said = Korrektur.extractTime(text || "").time;
+    if (said) { f.value = said; this.dict.timeSource = "genannt"; $("dictTimeSrc").textContent = "aus dem Diktat übernommen"; }
+  },
+  /* Ergebnis der Kürzel-Umwandlung im Diktierfenster anzeigen (inkl. Auswahl bei Mehrdeutigkeit) */
+  showAnlageResult(text) {
+    const r = Anlagen.resolve(text), ta = $("dictText");
+    const said = " <span class=\"said\">(gesprochen: „" + esc(text) + "“)</span>";
+    if (r.error) { this.sheetMsg(esc(r.error) + said, "err"); return; }
+    ta.value = r.code;
+    if (r.choices) {
+      this.sheetMsg("„" + esc(r.term) + "“ ist mehreren Kürzeln zugeordnet. Bitte wählen:" + said +
+        '<div class="chips">' + r.choices.map(c => '<button class="chip" data-choose="' + esc(c.code) + '">' + esc(c.code) + '</button>').join("") + '</div>', "info");
+      $("sheetMsg").querySelectorAll("[data-choose]").forEach(b => b.onclick = () => { ta.value = b.dataset.choose; this.sheetMsg("Gewählt: <b>" + esc(b.dataset.choose) + "</b>" + said, "ok"); });
+      return;
+    }
+    if (r.confirm) { this.sheetMsg("Vorläufige Zuordnung: " + Anlagen.explain(r) + said + "<br>Bitte prüfen – „" + esc(r.term) + "“ ist als „bestätigen“ markiert.", "info"); return; }
+    this.sheetMsg(Anlagen.explain(r) + said, "ok");
+  },
+  /* Beim Start: nicht gespeichertes Diktat wiederherstellen */
+  restoreDraft() {
+    const d = Speech.loadDraft(); if (!d || !d.text) { Speech.clearDraft(); return; }
+    if (d.incidentId && Store.data.incidents.some(i => i.id === d.incidentId)) { Store.data.currentId = d.incidentId; Store.save(); this.render(); }
+    this.openDictation(new Date(d.startedAt), true, d.purpose || "detail");
+    this.dict.recognized = d.text;
+    $("dictText").value = d.text; $("dictText").readOnly = false;
+    this.dictMode("edit");
+    this.sheetMsg("Nicht gespeichertes Diktat wiederhergestellt. Bitte prüfen und speichern.", "info");
+  },
+  /* Tastatur-Eingabe (ohne direkte Spracherkennung): gleiches Fenster, sofort im Bearbeitungsmodus */
+  openManualEntry(reason, capturedAt, purpose) {
+    const inc = Store.current();
+    purpose = purpose || Speech.purpose || (inc && inc.anlage ? "detail" : "anlage");
+    this.openDictation(capturedAt || new Date(), true, purpose);
+    this.dict.recognized = ""; this.dict.source = "manuell";
+    $("dictText").readOnly = false;
+    this.dictMode("edit");
+    if (reason) this.sheetMsg(esc(reason), "err");
+    else $("dictTitle").textContent = purpose === "anlage" ? "Anlage schreiben" : "Schritt schreiben";
+    setTimeout(() => $("dictText") && $("dictText").focus(), 50);
+  },
+
+  /* Anlage ändern: tippen auf die Überschrift */
+  openAnlageEdit() {
+    const inc = Store.current();
+    const recent = this.recentCodes();
+    this.openSheet('<h2>Anlage und Bereich</h2><label for="anlageInput">Kennung oder Bezeichnung (z. B. 030RB_100 oder „Roboter 30 100“)</label>' +
+      '<input id="anlageInput" value="' + esc(inc && inc.anlage ? inc.anlage.code : "") + '" placeholder="Anlage">' +
+      '<p class="hint" id="anlagePreview"></p>' +
+      (recent.length ? '<div class="hint">Zuletzt genutzt:</div><div class="chips">' + recent.map(c => '<button class="chip" data-pick="' + esc(c) + '">' + esc(c) + '</button>').join("") + '</div>' : "") +
+      '<label for="bereichInput">Bereich (optional, z. B. MRA2)</label>' +
+      '<input id="bereichInput" value="' + esc(inc ? inc.bereich || "" : "") + '" placeholder="MRA2" autocomplete="off">' +
+      '<div class="row actions"><button class="btn" id="anlageDictate">Anlage diktieren</button><button class="btn primary" id="anlageSave">Speichern</button></div>' +
+      '<div class="row"><button class="btn" data-act="close">Abbrechen</button></div>');
+    const preview = () => { const r = Anlagen.resolve($("anlageInput").value); $("anlagePreview").innerHTML = r.error ? esc(r.error) : "→ <b>" + esc(r.code) + "</b>" + (r.choices ? " (mehrdeutig: " + r.choices.map(c => esc(c.code)).join(" / ") + ")" : r.confirm ? " (vorläufig, bitte prüfen)" : ""); };
+    $("anlageInput").oninput = preview; preview();
+    $("sheet").querySelectorAll("[data-pick]").forEach(b => b.onclick = () => { $("anlageInput").value = b.dataset.pick; preview(); });
+    $("anlageDictate").onclick = () => { this.closeSheet(); Speech.start("anlage"); };
+    $("bereichInput").oninput = () => { const v = ReportRules.normBereich($("bereichInput").value); if (v !== $("bereichInput").value) $("bereichInput").value = v; };
+    $("anlageSave").onclick = () => {
+      const raw = $("anlageInput").value.trim();
+      let code = null;
+      if (raw) {                                  // Anlage ist optional – leer lassen ist erlaubt
+        const r = Anlagen.resolve(raw);
+        if (r.error) { this.sheetMsg(esc(r.error), "err"); return; }
+        if (r.choices && !Anlagen.direct(raw)) { this.sheetMsg("Mehrdeutig – bitte das Kürzel direkt eingeben: " + r.choices.map(c => esc(c.code)).join(" oder "), "err"); return; }
+        code = r.code;
+      }
+      const inc = Store.current() || Store.newIncident();
+      inc.bereich = ReportRules.normBereich($("bereichInput").value);
+      this.closeSheet();
+      if (code && (!inc.anlage || inc.anlage.code !== code)) this.setAnlage(code, raw);
+      else { Store.save(); this.render(); this.status("✓ Gespeichert.", "ok"); }
+    };
+  },
+  setAnlage(code, raw) {
+    const inc = Store.current() || Store.newIncident();
+    inc.anlage = { code, raw: raw || code, at: new Date().toISOString() };
+    Store.save(); this.render(); this.status("✓ Anlage " + code + " übernommen.", "ok");
   },
 
   openEntry(id) {
     const e = Store.current().entries.find(x => x.id === id);
     const d = new Date(e.createdAt);
-    this.openSheet('<h2>Eintrag bearbeiten</h2>' +
-      '<label>Erfasst am ' + fmtDate(d, true) + ' um ' + fmtTime(d) + ':' + pad(d.getSeconds()) + ' Uhr (unveränderlich)</label>' +
-      '<textarea id="editText">' + esc(e.text) + '</textarea>' +
+    this.openSheet('<h2>Detail bearbeiten</h2>' +
+      '<label for="editTime">Uhrzeit des Ereignisses</label><div class="timerow"><input type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" autocomplete="off" id="editTime" value="' + esc(e.time) + '"><span>' + esc(e.timeSource || "erfasst") + '</span></div>' +
+      '<p class="hint">Erfasst am ' + fmtDate(d, true) + ' um ' + fmtTime(d) + ':' + pad(d.getSeconds()) + ' Uhr (Erfassungszeitpunkt, unveränderlich).</p>' +
+      '<label for="editText">Text</label><textarea id="editText">' + esc(e.text) + '</textarea>' +
       (e.editedAt ? '<label>Ursprünglich erkannter Text</label><div class="orig">' + esc(e.originalText) + '</div>' : "") +
-      '<div class="row"><button class="btn danger" id="delEntry">Löschen</button><button class="btn" data-act="close">Abbrechen</button>' +
+      '<div class="row actions"><button class="btn danger" id="delEntry">Löschen</button><button class="btn" data-act="close">Abbrechen</button>' +
       '<button class="btn primary" id="saveEntry">Speichern</button></div>');
-    $("saveEntry").onclick = () => { Store.editEntry(id, $("editText").value.trim()); this.closeSheet(); this.render(); };
+    $("saveEntry").onclick = () => {
+      const tm = normTime($("editTime").value);
+      if (tm !== e.time && !Store.setEntryTime(id, tm, "geändert")) { this.sheetMsg("Bitte eine gültige Uhrzeit eintragen.", "err"); return; }
+      Store.editEntry(id, $("editText").value.trim()); this.closeSheet(); this.render();
+    };
     $("delEntry").onclick = () => {
-      this.ask("Eintrag von " + fmtTime(d) + " Uhr wirklich löschen?", "Löschen", () => { Store.deleteEntry(id); this.render(); this.status("Eintrag gelöscht.", "ok"); });
+      this.ask("Detail von " + fmtTime(d) + " Uhr wirklich löschen?", "Löschen", () => { Store.deleteEntry(id); this.render(); this.status("Detail gelöscht.", "ok"); });
     };
   },
 
+  /* Vorgänge wechseln / anlegen */
   openIncidents() {
-    const list = Store.data.incidents;
-    this.openSheet('<h2>Störungen</h2>' +
-      '<button class="btn primary" style="width:100%;margin-bottom:12px" id="sheetNewInc">＋ Neue Störung</button>' +
+    const list = Store.data.incidents, cur = Store.current();
+    this.openSheet('<h2>Vorgänge</h2>' +
+      '<button class="btn primary" style="width:100%;margin-bottom:8px" id="sheetNewInc">＋ Neuer Vorgang</button>' +
+      (cur && cur.anlage ? '<button class="btn" style="width:100%;margin-bottom:12px" id="sheetNewSame">＋ Neuer Vorgang an ' + esc(cur.anlage.code) + '</button>' : "") +
       (list.length ? list.map(i => '<button class="list-item' + (i.id === Store.data.currentId ? " active" : "") +
-        '" data-inc="' + i.id + '"><b>' + esc(i.title) + '</b><small>' + i.entries.length + ' Einträge · angelegt ' +
-        fmtDate(new Date(i.createdAt), true) + '</small></button>').join("") : '<p class="hint">Noch keine Störungen.</p>') +
-      (Store.current() ? '<label>Name der aktuellen Störung</label><input id="incName" value="' + esc(Store.current().title) + '">' +
-        '<div class="row"><button class="btn danger" id="delInc">Störung löschen</button><button class="btn" id="saveIncName">Name speichern</button></div>' : "") +
+        '" data-inc="' + i.id + '"><b>' + esc(ReportRules.live(i).title || (i.anlage ? i.anlage.code : "ohne Anlage")) +
+        '</b><small>' + fmtDate(new Date(i.createdAt), true) + " " + fmtTime(new Date(i.createdAt)) + " · " + i.entries.length + (i.entries.length === 1 ? " Eintrag" : " Einträge") + '</small></button>').join("") : '<p class="hint">Noch keine Vorgänge.</p>') +
+      (cur ? '<div class="row"><button class="btn danger" id="delInc">Aktuellen Vorgang löschen</button></div>' : "") +
       '<div class="row"><button class="btn" data-act="close">Schließen</button></div>');
-    $("sheetNewInc").onclick = () => { Store.newIncident(); this.closeSheet(); this.render(); this.status("Neue Störung angelegt.", "ok"); };
+    $("sheetNewInc").onclick = () => { Store.newIncident(); this.closeSheet(); this.render(); this.status("Neuer Vorgang angelegt.", "ok"); };
+    if ($("sheetNewSame")) $("sheetNewSame").onclick = () => {
+      const code = cur.anlage.code; const n = Store.newIncident(); n.anlage = { code, raw: code, at: new Date().toISOString() }; n.bereich = cur.bereich || ""; Store.save();
+      this.closeSheet(); this.render(); this.status("Neuer Vorgang an " + code + " angelegt.", "ok");
+    };
     $("sheet").querySelectorAll("[data-inc]").forEach(b => b.onclick = () => {
       Store.data.currentId = b.dataset.inc; Store.save(); this.closeSheet(); this.render();
     });
-    if ($("saveIncName")) $("saveIncName").onclick = () => {
-      const v = $("incName").value.trim(); if (v) { Store.current().title = v; Store.save(); } this.closeSheet(); this.render();
-    };
     if ($("delInc")) $("delInc").onclick = () => {
-      const inc = Store.current();
-      this.ask("Störung „" + inc.title + "“ mit " + inc.entries.length + " Einträgen endgültig löschen?", "Endgültig löschen", () => {
-        Store.data.incidents = Store.data.incidents.filter(i => i.id !== inc.id);
+      this.ask("Vorgang " + (cur.anlage ? cur.anlage.code + " " : "") + "mit " + cur.entries.length + " Details endgültig löschen?", "Endgültig löschen", () => {
+        Store.data.incidents = Store.data.incidents.filter(i => i.id !== cur.id);
         Store.data.currentId = Store.data.incidents[0] ? Store.data.incidents[0].id : null;
-        Store.save(); this.render(); this.status("Störung gelöscht.", "ok");
+        Store.save(); this.render(); this.status("Vorgang gelöscht.", "ok");
       });
     };
   },
 
-  openReport() {
-    const inc = Store.current();
-    if (!inc || !inc.entries.length) { this.status("Noch keine Einträge für einen Bericht.", "err"); return; }
-    if (!inc.report) { inc.report = { text: ReportRules.build(inc), generatedAt: new Date().toISOString(), editedAt: null, handedToMailAt: null }; Store.save(); }
-    const changed = inc.entries.some(e => (e.editedAt || e.createdAt) > inc.report.generatedAt);
-    this.openSheet('<h2>Störbericht prüfen</h2>' +
-      '<p class="hint">Entwurf – bitte prüfen und bei Bedarf ändern. Die Originaleinträge bleiben unverändert erhalten.</p>' +
-      (changed ? '<div class="note">Seit Erstellung des Berichts wurden Einträge hinzugefügt oder geändert. „Neu erzeugen“ übernimmt sie (eigene Änderungen am Bericht gehen dabei verloren).</div>' : "") +
-      (inc.report.handedToMailAt ? '<div class="note">An die Mail-App übergeben am ' + fmtDate(new Date(inc.report.handedToMailAt), true) + ' ' + fmtTime(new Date(inc.report.handedToMailAt)) + ' Uhr. Ob die Mail tatsächlich gesendet wurde, zeigt nur deine Mail-App.</div>' : "") +
-      '<textarea id="reportText">' + esc(inc.report.text) + '</textarea>' +
-      '<div class="row"><button class="btn" id="regen">Neu erzeugen</button><button class="btn" id="copyRep">Kopieren</button></div>' +
-      '<div class="row"><button class="btn" data-act="close">Schließen</button><button class="btn primary" id="repMail">Per E-Mail senden</button></div>');
-    const ta = $("reportText");
-    ta.oninput = () => { inc.report.text = ta.value; inc.report.editedAt = new Date().toISOString(); Store.save(); };
-    $("regen").onclick = () => {
-      const regen = () => { inc.report = { text: ReportRules.build(inc), generatedAt: new Date().toISOString(), editedAt: null, handedToMailAt: null }; Store.save(); this.openReport(); };
-      if (inc.report.editedAt) this.ask("Eigene Änderungen am Bericht verwerfen und neu erzeugen?", "Neu erzeugen", regen); else regen();
-    };
-    $("copyRep").onclick = () => this.copyText(ta.value, "Bericht", ta);
-    $("repMail").onclick = () => this.sendMail();
-  },
-
-  /* Meldung innerhalb des geöffneten Fensters (die Statusleiste liegt dahinter). */
+  /* Meldung im geöffneten Fenster; ist keines offen, in der Statusleiste. */
   sheetMsg(msg, kind) {
+    if ($("sheetBg").classList.contains("hidden")) { this.status(msg, kind, kind === "err"); return; }
     let box = $("sheetMsg");
     if (!box) { box = document.createElement("div"); box.id = "sheetMsg"; box.setAttribute("role", "status"); $("sheet").prepend(box); }
     box.className = "sheetmsg " + (kind || ""); box.innerHTML = msg;
@@ -568,78 +1498,154 @@ const UI = {
     if (selectEl) { selectEl.focus(); selectEl.select(); }
     this.sheetMsg("✗ Kopieren wurde vom Browser blockiert – die Zwischenablage ist <b>unverändert</b>." +
       (selectEl ? " Der Text ist markiert: lange auf die Markierung drücken → <b>Kopieren</b>."
-                : " Bitte unter „Bericht prüfen“ lange in den Text drücken → <b>Alles auswählen</b> → <b>Kopieren</b>."), "err");
+                : " Bitte den Berichtstext lange drücken → <b>Kopieren</b>."), "err");
     return false;
   },
 
+  /* E-Mail: Empfänger + Berichtsversion(en) wählen, dann ein einziger Button „Senden“.
+     „Senden“ ist ein echter mailto-Link (vom Nutzer angetippt) – es wird nie automatisch versendet. */
+  MAIL_SEP: "\n\n--------------------\n\n",
+  mailBody(inc, versions) {
+    return versions.map(v => ReportRules.renderLive(inc, v === "mit")).join(this.MAIL_SEP);
+  },
   sendMail() {
     const inc = Store.current();
-    if (!inc || !inc.entries.length) { this.status("Noch keine Einträge für einen Bericht.", "err"); return; }
-    if (!inc.report) { this.openReport(); return; }   // erst prüfen lassen
-    const to = Store.data.settings.email || "";
-    const subject = inc.title;
-    const body = inc.report.text;
-    const url = "mailto:" + encodeURIComponent(to) + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
-    const canShare = !!navigator.share && (!navigator.canShare || navigator.canShare({ text: body }));
-    this.openSheet('<h2>Bericht per E-Mail senden</h2>' +
-      '<label>Empfänger</label><div class="orig" id="mailTo">' + (to ? esc(to) : "– keine Adresse hinterlegt (⚙ Einstellungen) –") + '</div>' +
-      '<label>Betreff</label><div class="orig" id="mailSubj">' + esc(subject) + '</div>' +
-      '<a class="btn primary linkbtn" id="mailLink" href="' + esc(url) + '" target="_blank" rel="noopener">Mail-App öffnen</a>' +
-      (canShare ? '<button class="btn linkbtn" id="mailShare">Teilen … (z. B. Gmail)</button>' : "") +
-      '<p class="hint">Falls sich nichts öffnet: Bericht kopieren, Mail-App selbst öffnen und einfügen.</p>' +
-      '<div class="row">' + (to ? '<button class="btn" id="copyTo">Adresse kopieren</button>' : "") +
-      '<button class="btn" id="copyMail">Bericht kopieren</button></div>' +
-      (url.length > 1800 ? '<div class="note">Langer Bericht – manche Mail-Apps kürzen ihn. Im Zweifel „Bericht kopieren“ nutzen.</div>' : "") +
-      '<div class="row"><button class="btn" data-act="close">Schließen</button></div>');
-
+    if (!inc || !inc.entries.length) { this.status("Noch keine Einträge – der Bericht ist noch leer.", "err"); return; }
+    const set = Store.data.settings;
+    const valid = set.recipients.filter(x => x.email);
+    let sel = valid.find(x => x.id === set.lastRecipientId) || (valid.length === 1 ? valid[0] : null);
+    // Vorauswahl: zuletzt gewählte Version(en), beim ersten Mal die gerade angezeigte Ansicht
+    let versions = Array.isArray(set.mailVersions) && set.mailVersions.length ? set.mailVersions.slice() : [inc.view === "ohne" ? "ohne" : "mit"];
+    const subject = ReportRules.subjectLive(inc);
+    const url = () => "mailto:" + encodeURIComponent(sel ? sel.email : "") + "?subject=" + encodeURIComponent(subject) +
+                      "&body=" + encodeURIComponent(this.mailBody(inc, versions));
+    const box = (v, label) => '<label class="pick"><input type="checkbox" name="ver" value="' + v + '"' + (versions.includes(v) ? " checked" : "") + '><span><b>' + label + '</b></span></label>';
+    this.openSheet('<h2>Bericht senden</h2>' +
+      '<label>Empfänger</label>' + (valid.length ? '<div id="rcpPick">' + valid.map(x => '<label class="pick"><input type="radio" name="rcp" value="' + x.id + '"' + (sel && sel.id === x.id ? " checked" : "") + '><span><b>' + esc(x.name || "(ohne Name)") + '</b><small>' + esc(x.email) + '</small></span></label>').join("") + '</div>'
+        : '<div class="note">Noch kein Empfänger mit Adresse. In ⚙ Einstellungen anlegen – oder die Adresse in der Mail-App eintragen.</div>') +
+      '<label>Berichtsversion</label><div id="verPick">' + box("mit", "Mit Uhrzeit") + box("ohne", "Ohne Uhrzeit") + '</div>' +
+      '<div class="actions"><a class="btn primary linkbtn" id="mailLink" href="' + esc(url()) + '" target="_blank" rel="noopener">Senden</a></div>');
+    const update = () => {
+      $("mailLink").href = url();
+      const n = $("mailNote"); if (n) n.remove();
+    };
+    $("sheet").querySelectorAll('input[name="rcp"]').forEach(rb => rb.onchange = () => {
+      sel = valid.find(x => x.id === rb.value) || null;
+      if (sel) { set.lastRecipientId = sel.id; Store.save(); }
+      update();
+    });
+    $("sheet").querySelectorAll('input[name="ver"]').forEach(cb => cb.onchange = () => {
+      versions = ["mit", "ohne"].filter(v => $("sheet").querySelector('input[name="ver"][value="' + v + '"]').checked);
+      if (versions.length) { set.mailVersions = versions.slice(); Store.save(); }
+      update();
+    });
     /* Ob die Mail-App aufging, lässt sich nur indirekt erkennen: dann geht diese Seite in den Hintergrund. */
-    $("mailLink").onclick = () => {
+    $("mailLink").onclick = (ev) => {
+      if (valid.length && !sel) { ev.preventDefault(); this.sheetMsg("Bitte zuerst einen Empfänger auswählen.", "err"); return false; }
+      if (!versions.length) { ev.preventDefault(); this.sheetMsg("Bitte mindestens eine Berichtsversion auswählen.", "err"); return false; }
+      $("mailLink").href = url();                // aktueller Stand der Rohdaten
       let left = false;
       const onHide = () => { if (document.hidden) left = true; };
       document.addEventListener("visibilitychange", onHide);
       window.addEventListener("pagehide", onHide);
-      this.sheetMsg("Mail-Link wurde ausgelöst … warte auf die Mail-App.", "info");
+      this.sheetMsg("Mail-App wird geöffnet …", "info");
       setTimeout(() => {
         document.removeEventListener("visibilitychange", onHide);
         window.removeEventListener("pagehide", onHide);
         if (!$("mailLink")) return;            // Fenster inzwischen geschlossen
         if (left) {
-          inc.report.handedToMailAt = new Date().toISOString(); Store.save();
+          inc.handedToMailAt = new Date().toISOString(); Store.save();
           this.sheetMsg("📨 Mail-App wurde geöffnet. <b>Noch nicht versendet</b> – bitte dort prüfen und auf Senden tippen.", "ok");
         } else {
-          this.sheetMsg("✗ Es hat sich <b>keine Mail-App geöffnet</b> (in der claude.ai-Testansicht werden Mail-Links meist blockiert). Bitte „Bericht kopieren“ nutzen und in eine neue Mail einfügen.", "err");
+          this.sheetMsg("✗ Es hat sich <b>keine Mail-App geöffnet</b>. In der claude.ai-Testansicht werden Mail-Links meist blockiert – in der Version auf GitHub Pages (Chrome) funktioniert es.", "err");
         }
       }, 2500);
     };
-    if ($("mailShare")) $("mailShare").onclick = async () => {
-      try {
-        await navigator.share({ title: subject, text: (to ? "An: " + to + "\n\n" : "") + body });
-        inc.report.handedToMailAt = new Date().toISOString(); Store.save();
-        this.sheetMsg("📨 Bericht an die gewählte App übergeben. <b>Noch nicht versendet</b> – dort auf Senden tippen.", "ok");
-      } catch (e) {
-        this.sheetMsg(e && e.name === "AbortError" ? "Teilen abgebrochen – nichts übergeben." : "✗ Teilen ist hier blockiert. Bitte „Bericht kopieren“ nutzen.", "err");
-      }
-    };
-    if ($("copyTo")) $("copyTo").onclick = () => this.copyText(to, "Adresse");
-    $("copyMail").onclick = () => this.copyText(body, "Bericht");
   },
 
   openSettings() {
+    const rcpHtml = r => '<div class="rcp" data-id="' + esc(r.id) + '" data-self="' + (r.self ? 1 : 0) + '"><div class="rcphead"><span>' + (r.self ? "Eigener Eintrag" : "Empfänger") + '</span>' +
+      (r.self ? "" : '<button class="rcpDel" aria-label="Empfänger entfernen">✕ Entfernen</button>') + '</div>' +
+      '<input class="rcpName" value="' + esc(r.name) + '" placeholder="' + (r.self ? "Dein Name" : "Name") + '" aria-label="Name" autocomplete="off">' +
+      '<input class="rcpMail" type="email" inputmode="email" value="' + esc(r.email) + '" placeholder="name@firma.de" aria-label="E-Mail-Adresse" autocomplete="off"></div>';
+    const rows = Store.data.settings.kuerzel.map(r => ({ k: r.k, terms: r.terms.join(", ") }));
+    const rowHtml = (r, n) => '<div class="kzrow" data-n="' + n + '"><input class="kzK" maxlength="3" value="' + esc(r.k) + '" placeholder="RB_" aria-label="Kürzel" autocapitalize="characters">' +
+      '<input class="kzT" value="' + esc(r.terms) + '" placeholder="Roboter, Robi" aria-label="Begriffe"><button class="kzDel" aria-label="Kürzel entfernen">✕</button></div>';
     this.openSheet('<h2>Einstellungen</h2>' +
-      '<label for="setEmail">Empfänger für Störberichte</label>' +
-      '<input id="setEmail" type="email" inputmode="email" placeholder="name@firma.de" value="' + esc(Store.data.settings.email) + '">' +
-      '<p class="hint">Wird nur auf diesem Gerät gespeichert.</p>' +
-      '<label>Diagnose Spracherkennung</label><div class="orig" id="diagBox">' + Speech.diagnose() +
-      '\nSpeicherung: ' + (Store.storageOk ? "lokal auf diesem Gerät" : "NICHT verfügbar") +
-      '\nStörungen: ' + Store.data.incidents.length + '</div>' +
-      '<div class="row"><button class="btn" id="copyDiag">Diagnose kopieren</button><button class="btn" id="manualBtn">Eintrag per Tastatur</button></div>' +
-      '<div class="row"><button class="btn" data-act="close">Abbrechen</button><button class="btn primary" id="saveSet">Speichern</button></div>');
+      '<label>Empfänger</label>' +
+      '<p class="hint">Je Empfänger Name und darunter die E-Mail-Adresse – beides gehört fest zusammen. Gespeichert nur auf diesem Gerät.</p>' +
+      '<div id="rcpRows">' + Store.data.settings.recipients.map(rcpHtml).join("") + '</div>' +
+      '<button class="btn" id="rcpAdd" style="width:100%;margin-top:8px">＋ Empfänger hinzufügen</button>' +
+      '<label>Anlagenkürzel</label>' +
+      '<p class="hint">Format der Kennung: 3 Ziffern + 3 Zeichen + 3 Ziffern, z. B. 030RB_100. Fehlt die hintere Nummer, gilt 001.<br>' +
+      'Pro Kürzel beliebig viele Begriffe, durch Komma getrennt. Ein <b>?</b> hinter einem Begriff (z. B. „Station?“) bedeutet: Zuordnung jedes Mal prüfen.</p>' +
+      '<div class="kzhead"><span>Kürzel</span><span>Begriffe / Synonyme</span></div>' +
+      '<div id="kzRows">' + rows.map(rowHtml).join("") + '</div>' +
+      '<button class="btn" id="kzAdd" style="width:100%;margin-top:6px">＋ Kürzel hinzufügen</button>' +
+      '<label for="kzTest">Testen</label><input id="kzTest" placeholder="z. B. Roboter 30 100"><p class="hint" id="kzOut">Gesprochene Bezeichnung eingeben, um das Ergebnis zu sehen.</p>' +
+      '<details class="diag"><summary>Fehlersuche Mikrofon (nur bei Problemen)</summary>' +
+        '<p class="hint">Zeigt, warum direktes Diktieren auf diesem Gerät funktioniert oder nicht. Für den normalen Betrieb nicht nötig.</p>' +
+        '<div class="orig" id="diagBox">' + Speech.diagnose() +
+        '\nSpeicherung: ' + (Store.storageOk ? "lokal auf diesem Gerät" : "NICHT verfügbar") +
+        '\nVorgänge: ' + Store.data.incidents.length + '</div>' +
+        '<div class="row"><button class="btn" id="copyDiag">Diagnose kopieren</button><button class="btn" id="manualBtn">Eingabe per Tastatur</button></div>' +
+      '</details>' +
+      '<div class="row actions"><button class="btn" data-act="close">Abbrechen</button><button class="btn primary" id="saveSet">Speichern</button></div>');
+    const wireRcp = () => document.querySelectorAll(".rcpDel").forEach(b => b.onclick = () => b.closest(".rcp").remove());
+    wireRcp();
+    $("rcpAdd").onclick = () => { $("rcpRows").insertAdjacentHTML("beforeend", rcpHtml({ id: uid(), name: "", email: "" })); wireRcp(); $("rcpRows").lastElementChild.querySelector(".rcpName").focus(); };
     Speech.micPermissionState().then(st => {
       const el = $("permState"); if (!el) return;
       el.textContent = { granted: "erlaubt ✓", denied: "ABGELEHNT ✗ (Schloss-Symbol → Berechtigungen → Mikrofon)", prompt: "noch nicht gefragt (Chrome fragt beim ersten Diktieren)" }[st] || st;
     });
-    $("saveSet").onclick = () => { Store.data.settings.email = $("setEmail").value.trim(); Store.save(); this.closeSheet(); this.status("Einstellungen gespeichert.", "ok"); };
-    $("manualBtn").onclick = () => this.openManualEntry("");
+    const readRows = () => [...document.querySelectorAll(".kzrow")].map(r => ({
+      k: r.querySelector(".kzK").value.trim().toUpperCase(),
+      terms: r.querySelector(".kzT").value.split(",").map(t => t.trim()).filter(Boolean)
+    })).filter(r => r.k || r.terms.length);
+    const test = () => {
+      const v = $("kzTest").value.trim(); if (!v) return;
+      const r = Anlagen.resolve(v, readRows());
+      $("kzOut").innerHTML = r.error ? esc(r.error) : "→ <b>" + esc(r.code) + "</b>" + (r.choices ? " – mehrdeutig, Auswahl: " + r.choices.map(c => esc(c.code)).join(" / ") : r.confirm ? " – vorläufig, wird zur Prüfung angezeigt" : "");
+    };
+    const wire = () => {
+      document.querySelectorAll(".kzDel").forEach(b => b.onclick = () => { b.closest(".kzrow").remove(); test(); });
+      document.querySelectorAll(".kzK, .kzT").forEach(f => f.oninput = test);
+    };
+    wire();
+    $("kzAdd").onclick = () => { $("kzRows").insertAdjacentHTML("beforeend", rowHtml({ k: "", terms: "" }, Date.now())); wire(); $("kzRows").lastElementChild.querySelector(".kzK").focus(); };
+    $("kzTest").oninput = test;
+    $("saveSet").onclick = () => {
+      const tbl = readRows(), seen = {};
+      for (const r of tbl) {
+        if (!/^[A-Z0-9_]{3}$/.test(r.k)) { this.sheetMsg("Kürzel „" + esc(r.k || "(leer)") + "“: genau 3 Zeichen (Buchstaben, Ziffern oder _), z. B. RB_.", "err"); return; }
+        if (seen[r.k]) { this.sheetMsg("Kürzel " + esc(r.k) + " ist doppelt vorhanden.", "err"); return; }
+        if (!r.terms.length) { this.sheetMsg("Für " + esc(r.k) + " fehlt mindestens ein Begriff.", "err"); return; }
+        seen[r.k] = true;
+      }
+      const owners = {};
+      tbl.forEach(r => r.terms.forEach(t => { const key = t.replace(/\?$/, "").toLowerCase(); (owners[key] = owners[key] || []).push(r.k); }));
+      const multi = Object.entries(owners).filter(([, ks]) => ks.length > 1).map(([t, ks]) => "„" + t + "“ (" + ks.join(", ") + ")");
+      /* Empfänger prüfen: Name und Adresse gehören zusammen, keine doppelten Adressen */
+      const rcps = [], mails = {};
+      for (const el of document.querySelectorAll(".rcp")) {
+        const r = { id: el.dataset.id, name: el.querySelector(".rcpName").value.trim(), email: el.querySelector(".rcpMail").value.trim(), self: el.dataset.self === "1" };
+        if (!r.self && !r.name && !r.email) continue;            // leere Zeile ignorieren
+        if (r.email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(r.email)) { this.sheetMsg("Die Adresse „" + esc(r.email) + "“ ist keine gültige E-Mail-Adresse.", "err"); return; }
+        if (r.email && !r.name) { this.sheetMsg("Zur Adresse " + esc(r.email) + " fehlt der Name.", "err"); return; }
+        if (!r.self && !r.email) { this.sheetMsg("Für „" + esc(r.name) + "“ fehlt die E-Mail-Adresse.", "err"); return; }
+        const key = r.email.toLowerCase();
+        if (key && mails[key]) { this.sheetMsg("Die Adresse " + esc(r.email) + " ist doppelt eingetragen.", "err"); return; }
+        if (key) mails[key] = true;
+        if (!r.self) delete r.self;
+        rcps.push(r);
+      }
+      Store.data.settings.recipients = rcps;
+      if (!rcps.some(r => r.id === Store.data.settings.lastRecipientId)) Store.data.settings.lastRecipientId = null;
+      Store.data.settings.kuerzel = tbl;
+      Store.save(); this.closeSheet();
+      this.status("Einstellungen gespeichert." + (multi.length ? " Hinweis: " + esc(multi.join(", ")) + " ist mehreren Kürzeln zugeordnet – die App fragt dann nach." : ""), multi.length ? "info" : "ok", !!multi.length);
+    };
+    $("manualBtn").onclick = () => { Speech.purpose = null; this.openManualEntry(""); };
     $("copyDiag").onclick = () => this.copyText($("diagBox").innerText + "\nBrowser: " + navigator.userAgent, "Diagnose");
   }
 };
@@ -647,17 +1653,63 @@ const UI = {
 /* ---------------- Start ---------------- */
 Store.load();
 UI.render();
-$("micBtn").onclick = () => Speech.active ? Speech.stop() : Speech.start();
+$("micBtn").onclick = () => UI.bottomAction();
+$("writeBtn").onclick = () => { Speech.purpose = null; UI.openManualEntry("", new Date(), $("writeBtn").dataset.act || "detail"); };
+$("entries").addEventListener("change", ev => {
+  const f = ev.target.closest(".etime"); if (!f || !f.isConnected) return;
+  if (Store.setEntryTime(f.dataset.id, normTime(f.value), "geändert")) { UI.render(); UI.status("Uhrzeit geändert – Liste chronologisch neu sortiert.", "ok"); }
+  else { UI.render(); UI.status("Bitte eine gültige Uhrzeit wählen.", "err"); }
+});
+/* Tastatur: Bedienelemente am sichtbaren Bereich ausrichten (visualViewport). Zusätzlich sorgt
+   interactive-widget=resizes-content im Viewport dafür, dass Chrome den Inhalt selbst verkleinert. */
+(function keyboardAware() {
+  const vv = window.visualViewport; if (!vv) return;
+  let maxH = 0;
+  const apply = () => {
+    maxH = Math.max(maxH, vv.height);
+    const kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+    document.documentElement.style.setProperty("--kb", kb + "px");
+    document.documentElement.style.setProperty("--vvh", Math.round(vv.height) + "px");
+    document.body.classList.toggle("kb-open", kb > 80 || vv.height < maxH * 0.75);   // Tastatur offen (auch wenn Chrome den Inhalt verkleinert)
+  };
+  vv.addEventListener("resize", apply); vv.addEventListener("scroll", apply); apply();
+  document.addEventListener("focusin", ev => {
+    if (ev.target.matches("input, textarea")) setTimeout(() => ev.target.scrollIntoView({ block: "nearest" }), 250);
+  });
+})();
 $("incBtn").onclick = () => UI.openIncidents();
-$("newIncBtn").onclick = () => { Store.newIncident(); UI.render(); UI.status("Neue Störung angelegt – jetzt diktieren.", "ok"); };
+$("newIncBtn").onclick = () => { Store.newIncident(); UI.render(); UI.status("Neuer Vorgang angelegt – jetzt die Anlage nennen.", "ok"); };
 $("settingsBtn").onclick = () => UI.openSettings();
-$("reportBtn").onclick = () => UI.openReport();
-$("mailBtn").onclick = () => UI.sendMail();
-$("entries").onclick = ev => { const b = ev.target.closest(".more"); if (b) UI.openEntry(b.dataset.id); };
-$("sheetBg").onclick = ev => { if (ev.target.id === "sheetBg" || ev.target.dataset.act === "close") UI.closeSheet(); };
-document.addEventListener("visibilitychange", () => { if (document.hidden && Speech.active) Speech.stop(); });
-if (!Speech.supported) UI.status("Spracherkennung in diesem Browser nicht verfügbar – „Diktieren“ öffnet die Tastatur-Spracheingabe.", "info", true);
-setTimeout(() => { $("splash").classList.add("fade"); setTimeout(() => $("splash").remove(), 350); }, 1000);
+$("anlageHead").onclick = () => { if (Store.current() && Store.current().anlage) UI.openAnlageEdit(); else Speech.start("anlage"); };
+$("regRoh").onclick = () => UI.setRegister("roh");
+$("regMit").onclick = () => UI.setRegister("mit");
+$("regOhne").onclick = () => UI.setRegister("ohne");
+$("sendBtn").onclick = () => UI.sendMail();
+$("bereichBtn").onclick = () => { UI.openAnlageEdit(); setTimeout(() => $("bereichInput") && $("bereichInput").focus(), 60); };
+$("entries").onclick = ev => {
+  const b = ev.target.closest(".more"); if (b) return UI.openEntry(b.dataset.id);
+  const c = ev.target.closest("[data-code]"); if (c) return UI.setAnlage(c.dataset.code, c.dataset.code);
+};
+$("sheetBg").onclick = ev => { if ((ev.target.id === "sheetBg" && !UI.sheetLocked) || ev.target.dataset.act === "close") UI.closeSheet(); };
+document.addEventListener("visibilitychange", () => { if (document.hidden) Speech.pauseForBackground(); });
+UI.restoreDraft();
+if (!Speech.supported) UI.status("Spracherkennung in diesem Browser nicht verfügbar – die Eingabe läuft über das Tastatur-Mikrofon.", "info", true);
+/* Logo auf ganze Pixel setzen, damit es unverändert scharf dargestellt wird (kein Unterpixel-Versatz) */
+(function placeSplashLogo() {
+  const img = $("splashLogo"); if (!img) return;
+  const cm = 96 / 2.54;                         // 1 cm in CSS-Pixeln
+  img.style.left = Math.round((innerWidth - 297) / 2) + "px";
+  img.style.top = Math.round(innerHeight / 2 - 87 / 2 - cm) + "px";
+  img.style.transform = "none";
+})();
+const themeMeta = document.querySelector('meta[name="theme-color"]');
+const themeBefore = themeMeta ? themeMeta.content : null;
+if (themeMeta) themeMeta.content = "#0d0d0d";
+setTimeout(() => {
+  $("splash").classList.add("fade");
+  if (themeMeta && themeBefore) themeMeta.content = themeBefore;
+  setTimeout(() => $("splash").remove(), 350);
+}, 1000);
 </script>
 </body>
 </html>
